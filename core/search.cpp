@@ -27,7 +27,7 @@ int score_move(const board *b, struct move m, struct move hash_move, const struc
 
 	// capture
 	if (victim != EMPTY) {
-		// prioritize taking valuable using weak pieces (MVV/LVA)
+		// prioritize taking valuable piece using weak piece (MVV/LVA)
 		int score = 20000 + (PIECE_WEIGHTS[victim] * 10) - PIECE_WEIGHTS[attacker];
 
 		// recapture last moved piece
@@ -131,7 +131,7 @@ int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (
 		// lazy selection sort: find only the single best move left
 		pick_best_move(pseudo_moves, scores, i, move_count);
 
-		if (scores[i] <= 40 && i > 10) { // filter quiet moves
+		if (scores[i] <= 40 && i > 17) { // filter quiet moves
 			if (depth == 1 && best_eval + 100 < alpha)
 				continue;
 			if (depth >= 2 && depth <= 3)
