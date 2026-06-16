@@ -16,7 +16,7 @@ inline void pick_best_move(struct move *moves, int *scores, uint current_idx, ui
 }
 
 // scores a move for the selection sort algorithm
-int score_move(const board *b, struct move m, struct move hash_move, const struct move *killer_moves, uint last_target_sq)
+int score_move(const board *b, struct move m, struct move hash_move, const struct move *killer_moves, piece_color turn)
 {
 	// Principal Variation from previous iteration
 	if (m.from == hash_move.from && m.to == hash_move.to)
@@ -31,8 +31,8 @@ int score_move(const board *b, struct move m, struct move hash_move, const struc
 		int score = 20000 + (PIECE_WEIGHTS[victim] * 10) - PIECE_WEIGHTS[attacker];
 
 		// recapture last moved piece
-		if (m.to == last_target_sq)
-			score += 1000;
+		// if (m.to == last_target_sq)
+			// score += 1000;
 		return score;
 	}
 	// en passant is also a capture
@@ -48,7 +48,8 @@ int score_move(const board *b, struct move m, struct move hash_move, const struc
 	if (m.from == killer_moves[1].from && m.to == killer_moves[1].to)
 		return 10000;
 
-	return (int)PST_BONUS[attacker][m.to]; // default for quiet moves
+	uint to = turn == WHITE ? m.to : m.to ^ 56;
+	return (int)PST_BONUS[attacker][to]; // default for quiet moves
 }
 
 const int INF = 9999999;
@@ -75,7 +76,7 @@ uint generate_and_score_moves(const board *b, struct move *moves, int *scores, u
 			}
 
 			moves[move_count] = m;
-			scores[move_count] = score_move(b, m, hash_move, killer_moves, -1);
+			scores[move_count] = score_move(b, m, hash_move, killer_moves, Turn);
 			move_count++;
 
 			targets &= (targets - 1); // clear lowest set bit
@@ -236,9 +237,9 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 	// deepen search
 	for (uint cur_depth = 1; cur_depth <= target_depth; ++cur_depth) {
 		// score root moves inline before searching this depth
-		int scores[256];
+		int scores[224];
 		for (uint i = 0; i < move_count; ++i)
-			scores[i] = score_move(&b, root_moves[i], best_move_overall, killer_moves[0], -1);
+			scores[i] = score_move(&b, root_moves[i], best_move_overall, killer_moves[0], turn);
 
 		int alpha = -INF;
 		int beta = INF;
