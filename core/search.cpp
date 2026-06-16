@@ -16,7 +16,7 @@ inline void pick_best_move(struct move *moves, int *scores, uint current_idx, ui
 }
 
 // scores a move for the selection sort algorithm
-uint score_move(const board *b, struct move m, struct move hash_move, const struct move *killer_moves, uint last_target_sq)
+int score_move(const board *b, struct move m, struct move hash_move, const struct move *killer_moves, uint last_target_sq)
 {
 	// Principal Variation from previous iteration
 	if (m.from == hash_move.from && m.to == hash_move.to)
@@ -27,7 +27,7 @@ uint score_move(const board *b, struct move m, struct move hash_move, const stru
 
 	// capture
 	if (victim != EMPTY) {
-		// prioritize taking valuable using weak pieces
+		// prioritize taking valuable using weak pieces (MVV/LVA)
 		int score = 20000 + (PIECE_WEIGHTS[victim] * 10) - PIECE_WEIGHTS[attacker];
 
 		// recapture last moved piece
@@ -48,7 +48,7 @@ uint score_move(const board *b, struct move m, struct move hash_move, const stru
 	if (m.from == killer_moves[1].from && m.to == killer_moves[1].to)
 		return 10000;
 
-	return 0; // default for quiet moves
+	return (int)PST_BONUS[attacker][m.to]; // default for quiet moves
 }
 
 const int INF = 9999999;
@@ -129,6 +129,13 @@ int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (
 	for (uint i = 0; i < move_count; ++i) {
 		// lazy selection sort: find only the single best move left
 		pick_best_move(pseudo_moves, scores, i, move_count);
+
+		if (scores[i] <= 40 && i > 10) { // filter quiet moves
+			if (depth == 1 && best_eval + 100 < alpha)
+				continue;
+			if (depth >= 2 && depth <= 3)
+				depth--;
+		}
 
 		// avoid checking validity for every move
 		if (!is_valid_move(pseudo_moves[i], b, Turn))
