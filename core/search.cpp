@@ -1,8 +1,6 @@
 #include "engine-main.h"
 #include "attacks.h"
 #include "evaluate-tables.h"
-#include <algorithm>
-#include <cstdio>
 
 inline void pick_best_move(struct move *moves, int *scores, uint current_idx, uint move_count)
 {
@@ -27,7 +25,7 @@ int score_move(const board *b, struct move m, struct move hash_move, const struc
 
 	// capture
 	if (victim != EMPTY) {
-		// prioritize taking valuable piece using weak piece (MVV/LVA)
+		// prioritize taking valuable victim using weak attacker (MVV/LVA)
 		int score = 20000 + (PIECE_WEIGHTS[victim] * 10) - PIECE_WEIGHTS[attacker];
 
 		// recapture last moved piece
@@ -52,7 +50,7 @@ int score_move(const board *b, struct move m, struct move hash_move, const struc
 	return (int)PST_BONUS[attacker][to]; // default for quiet moves
 }
 
-const int INF = 9999999;
+const int INF = 30000;
 int evaluate_board(const board &b);
 
 template <piece_color Turn, bool FullyLegal>
@@ -199,8 +197,6 @@ int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (
 	return best_eval;
 }
 
-#include <algorithm> // For std::swap, std::max, std::min
-
 struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 {
 	static bool initialized = false;
@@ -234,20 +230,15 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 	best_move_overall = root_moves[0];
 	int eval = 0;
 
-	// deepen search
+	// iterative deepening
 	for (uint cur_depth = 1; cur_depth <= target_depth; ++cur_depth) {
-		// score root moves inline before searching this depth
-		int scores[224];
-		for (uint i = 0; i < move_count; ++i)
-			scores[i] = score_move(&b, root_moves[i], best_move_overall, killer_moves[0], turn);
-
 		int alpha = -INF;
 		int beta = INF;
 		struct move best_move_this_depth = root_moves[0];
 		int best_eval = (turn == WHITE) ? -INF : INF;
 
 		for (uint i = 0; i < move_count; ++i) {
-			// lazy selection sort step
+			// sort based on scores array which after depth 1 has real evaluation
 			pick_best_move(root_moves, scores, i, move_count);
 
 			struct board next_b = b;
@@ -255,6 +246,8 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 
 			int current_eval = (turn == WHITE) ? alpha_beta<BLACK>(next_b, cur_depth - 1, alpha, beta, 1, killer_moves) :
 							     alpha_beta<WHITE>(next_b, cur_depth - 1, alpha, beta, 1, killer_moves);
+
+			scores[i] = current_eval; // update score array with real evaluation
 
 			if (turn == WHITE) {
 				if (current_eval > best_eval) {
