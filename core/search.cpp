@@ -55,7 +55,7 @@ int score_move(const board *b, struct move m, struct move hash_move, const struc
 const int INF = 30000;
 int evaluate_board(const board &b);
 
-template <piece_color Turn, bool FullyLegal>
+template <piece_color Turn, bool FullyLegal, bool OnlyCaptures>
 uint generate_and_score_moves(const board *b, struct move *moves, int *scores, u64 white, u64 black, struct move hash_move, const struct move *killer_moves)
 {
 	uint move_count = 0;
@@ -63,6 +63,10 @@ uint generate_and_score_moves(const board *b, struct move *moves, int *scores, u
 	while (my_pieces) {
 		uint from = __builtin_ctzll(my_pieces);
 		u64 targets = get_piece_pseudo_moves(b, from, white, black);
+
+		if constexpr (OnlyCaptures) {
+			targets &= (Turn == WHITE) ? black : white;
+		}
 
 		while (targets) {
 			uint to = __builtin_ctzll(targets);
@@ -87,13 +91,61 @@ uint generate_and_score_moves(const board *b, struct move *moves, int *scores, u
 }
 
 template <piece_color Turn>
+int quiescence(board b, int alpha, int beta) {
+	int stand_pat = evaluate_board(b); // current evaluation if we don't do any captures
+	
+	if constexpr (Turn == BLACK) {
+		stand_pat = -stand_pat;
+	}
+	
+	if (stand_pat >= beta)
+		return beta;
+	if (stand_pat > alpha)
+		alpha = stand_pat;
+
+
+	u64 white, black;
+	get_occupancy(&white, &black, &b);
+	struct move moves[40];
+	int scores[40];
+
+	const struct move dummy_killers[2] = {{64,64}, {64,64}};
+	struct move dummy_hash_move = {64, 64};
+	uint move_cnt = generate_and_score_moves<Turn, true, true>(&b, moves, scores, white, black, dummy_hash_move, dummy_killers);
+
+	for (uint i = 0; i < move_cnt; ++i) {	// captures only
+		pick_best_move(moves, scores, i, move_cnt);
+		struct move m = moves[i];
+
+		if (stand_pat + PIECE_WEIGHTS[b.piece(m.to)] + 200 < alpha)
+			continue;
+
+		board b2 = b;
+		make_move(&b2, m);
+		int score = -quiescence<Turn == WHITE ? BLACK : WHITE>(b2, -beta, -alpha);
+
+		if (score >= beta)
+			return beta;
+		if (score > alpha)
+			alpha = score;
+	}
+
+	return alpha;
+}
+
+template <piece_color Turn>
 int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (&killer_moves)[32][2])
 {
 	int original_alpha = alpha;
 	int original_beta = beta;
 
-	if (depth == 0)
-		return evaluate_board(b);
+	if (depth == 0) {
+		if constexpr (Turn == WHITE) {
+			return quiescence<WHITE>(b, alpha, beta);
+		} else {
+			return -quiescence<BLACK>(b, -beta, -alpha);
+		}
+	}
 
 	// TT Probe
 	struct tt_entry &tte = TT[b.hash_key % TT_SIZE];
@@ -117,7 +169,7 @@ int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (
 	int scores[224];
 
 	// generate pseudo-legal moves
-	uint move_count = generate_and_score_moves<Turn, false>(
+	uint move_count = generate_and_score_moves<Turn, false, false>(
 		&b, pseudo_moves, scores, white, black, hash_move, killer_moves[ply]);
 
 	uint legal_moves_searched = 0;
@@ -131,8 +183,8 @@ int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (
 		// lazy selection sort: find only the single best move left
 		pick_best_move(pseudo_moves, scores, i, move_count);
 
-		if (scores[i] <= 40 && i > 17) { // filter quiet moves
-			if (depth == 1 && best_eval + 100 < alpha)
+		if (scores[i] <= 40 && i > 20) { // filter quiet moves
+			if (depth == 1 && best_eval + 200 < alpha)
 				continue;
 			if (depth >= 2 && depth <= 3)
 				depth--;
@@ -226,8 +278,8 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 
 	// generate root fully-legal moves, with empty hash move
 	uint move_count = (turn == WHITE) ?
-			generate_and_score_moves<WHITE, true>(&b, root_moves, scores, white, black, best_move_overall, killer_moves[0]) :
-			generate_and_score_moves<BLACK, true>(&b, root_moves, scores, white, black, best_move_overall, killer_moves[0]);
+			generate_and_score_moves<WHITE, true, false>(&b, root_moves, scores, white, black, best_move_overall, killer_moves[0]) :
+			generate_and_score_moves<BLACK, true, false>(&b, root_moves, scores, white, black, best_move_overall, killer_moves[0]);
 
 	best_move_overall = root_moves[0];
 	int eval = 0;
