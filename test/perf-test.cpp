@@ -22,7 +22,7 @@ void set_starting_position()
 		board[i] = start_layout[i];
 	turn = WHITE;
 	sync_from_tui(g_real_board);
-	init_castling(g_real_board);
+	init_castling(g_real_board, 3, 3);
 }
 
 

@@ -1,6 +1,8 @@
 #include "engine-main.h"
 #include "attacks.h"
 #include "evaluate-tables.h"
+#include <algorithm>
+#include <cstdio>
 
 inline void pick_best_move(struct move *moves, int *scores, uint current_idx, uint move_count)
 {

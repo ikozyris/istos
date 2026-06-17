@@ -95,8 +95,8 @@ extern void execute_move(u8 from, u8 to)
 	sync_to_tui(g_real_board, next_turn);
 }
 
-void init_castling(struct board &b)
+void init_castling(struct board &b, uint black, uint white)
 {
-	b.castle_black = 3;
-	b.castle_white = 3;
+	b.castle_black = black;
+	b.castle_white = white;
 }

@@ -43,7 +43,7 @@ void set_starting_position()
 	}
 	turn = true; // White to move at setup
 	sync_from_tui(g_real_board);
-	init_castling(g_real_board);
+	init_castling(g_real_board, 3, 3);
 }
 
 // Validates the piece type character
@@ -129,7 +129,7 @@ void play_interactive_game()
 {
 	char input[256];
 	int selected_sq = -1;
-	uint engine_depth = 10;
+	uint engine_depth = 11;
 	bool user_color_white = true;
 
 	memset(board, ' ', 64);
