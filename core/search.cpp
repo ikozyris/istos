@@ -1,8 +1,7 @@
 #include "engine-main.h"
 #include "attacks.h"
 #include "evaluate-tables.h"
-#include <algorithm>
-#include <cstdio>
+#include "time-management.h"
 
 inline void pick_best_move(struct move *moves, int *scores, uint current_idx, uint move_count)
 {
@@ -251,6 +250,12 @@ int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (
 	return best_eval;
 }
 
+TimeManager manager(16);
+constexpr bool has_time = false;
+void init_time_management(u64 time, u64 incr) {
+	manager.setClock(time, incr);
+}
+
 struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 {
 	static bool initialized = false;
@@ -286,6 +291,8 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 
 	// iterative deepening
 	for (uint cur_depth = 1; cur_depth <= target_depth; ++cur_depth) {
+		if constexpr (has_time) manager.startSearch();
+		
 		int alpha = -INF;
 		int beta = INF;
 		struct move best_move_this_depth = root_moves[0];
@@ -321,8 +328,15 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 		eval = best_eval;
 		best_move_overall = best_move_this_depth;
 
-		printf("depth %d: best move: %d to %d, eval: %d\n", cur_depth, best_move_overall.from,
+		printf("depth %u: best move: %u to %u, eval: %d\n", cur_depth, best_move_overall.from,
 		       best_move_overall.to, eval);
+
+		if constexpr (has_time) {
+			manager.finishSearch(cur_depth, best_move_this_depth);
+			bool go = manager.shouldContinue(cur_depth + 1);
+			if (!go)
+				return best_move_overall;
+		}
 	}
 
 	return best_move_overall;

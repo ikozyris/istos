@@ -30,6 +30,7 @@ int main()
 {
 	init_attacks();
 	set_starting_position();
+	init_time_management(120'000, 1'000);
 	uint depth = 11;
 	struct move a = get_best_move(g_real_board, depth, static_cast<piece_color>(turn));
 	printf("best move: %u -> %u, nodes %u", a.from, a.to, nodes);

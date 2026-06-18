@@ -106,3 +106,5 @@ inline int max(int a, int b) { return a > b ? a : b; }
 extern struct move get_best_move(struct board b, uint target_depth, piece_color turn);
 
 extern uint nodes;
+
+extern void init_time_management(u64 total, u64 incr);
