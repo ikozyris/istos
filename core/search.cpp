@@ -341,7 +341,7 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 	for (uint cur_depth = 1; cur_depth <= target_depth; ++cur_depth) {
 		if constexpr (has_time) manager.startSearch();
 
-		// aspiration window: use narrow window around previous eval for depth > 1 and pray we don't have to redo the search
+		// aspiration window: use narrow window around previous eval for depth > 1
 		int alpha = (cur_depth > 1) ? eval - ASPIRATION_WINDOW : -INF;
 		int beta  = (cur_depth > 1) ? eval + ASPIRATION_WINDOW :  INF;
 
