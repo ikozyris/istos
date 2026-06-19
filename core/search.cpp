@@ -15,7 +15,7 @@ inline void pick_best_move(struct move *moves, int *scores, uint current_idx, ui
 }
 
 // scores a move for the selection sort algorithm
-int score_move(const board *b, struct move m, struct move hash_move, const struct move *killer_moves, piece_color turn)
+int score_move(const board *b, struct move m, struct move hash_move, const struct move *killer_moves, piece_color turn, const int (&history)[7][64])
 {
 	// Principal Variation from previous iteration
 	if (m.from == hash_move.from && m.to == hash_move.to)
@@ -48,14 +48,14 @@ int score_move(const board *b, struct move m, struct move hash_move, const struc
 		return 10000;
 
 	uint to = turn == WHITE ? m.to : m.to ^ 56;
-	return (int)PST_BONUS[attacker][to]; // default for quiet moves
+	return (int)PST_BONUS[attacker][to] + history[attacker][m.to]; // default for quiet moves
 }
 
 const int INF = 30000;
 int evaluate_board(const board &b);
 
 template <piece_color Turn, bool FullyLegal, bool OnlyCaptures>
-uint generate_and_score_moves(const board *b, struct move *moves, int *scores, u64 white, u64 black, struct move hash_move, const struct move *killer_moves)
+uint generate_and_score_moves(const board *b, struct move *moves, int *scores, u64 white, u64 black, struct move hash_move, const struct move *killer_moves, const int (&history)[7][64])
 {
 	uint move_count = 0;
 	u64 my_pieces = (Turn == WHITE) ? white : black;
@@ -79,7 +79,7 @@ uint generate_and_score_moves(const board *b, struct move *moves, int *scores, u
 			}
 
 			moves[move_count] = m;
-			scores[move_count] = score_move(b, m, hash_move, killer_moves, Turn);
+			scores[move_count] = score_move(b, m, hash_move, killer_moves, Turn, history);
 			move_count++;
 
 			targets &= (targets - 1); // clear lowest set bit
@@ -107,10 +107,13 @@ int quiescence(board b, int alpha, int beta) {
 	get_occupancy(&white, &black, &b);
 	struct move moves[40];
 	int scores[40];
-
+	uint move_cnt;
+{
 	const struct move dummy_killers[2] = {{64,64}, {64,64}};
 	struct move dummy_hash_move = {64, 64};
-	uint move_cnt = generate_and_score_moves<Turn, true, true>(&b, moves, scores, white, black, dummy_hash_move, dummy_killers);
+	const int dummy_history[7][64] = {};
+	move_cnt = generate_and_score_moves<Turn, true, true>(&b, moves, scores, white, black, dummy_hash_move, dummy_killers, dummy_history);
+} // don't waste stack space
 
 	for (uint i = 0; i < move_cnt; ++i) {	// captures only
 		pick_best_move(moves, scores, i, move_cnt);
@@ -132,8 +135,8 @@ int quiescence(board b, int alpha, int beta) {
 	return alpha;
 }
 
-template <piece_color Turn>
-int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (&killer_moves)[32][2])
+template <piece_color Turn, bool AllowNull = true>
+int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (&killer_moves)[32][2], int (&history)[2][7][64])
 {
 	int original_alpha = alpha;
 	int original_beta = beta;
@@ -164,12 +167,36 @@ int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (
 	u64 white, black;
 	get_occupancy(&white, &black, &b);
 
+	// Null Move Pruning
+	if constexpr (AllowNull) {
+		u64 occ = white | black;
+		if (depth >= 3 && !is_in_check(&b, Turn, occ)) {
+			board null_b = b;
+			null_b.hash_key ^= zobrist_turn;
+			if (null_b.en_passant_sq != NO_EP) {
+				null_b.hash_key ^= zobrist_ep[null_b.en_passant_sq];
+				null_b.en_passant_sq = NO_EP;
+				null_b.hash_key ^= zobrist_ep[NO_EP];
+			}
+
+			constexpr piece_color NullTurn = (Turn == WHITE) ? BLACK : WHITE;
+			int null_score = alpha_beta<NullTurn, false>(null_b, depth - 1 - 2, alpha, beta, ply + 1, killer_moves, history);
+			if constexpr (Turn == WHITE) {
+				if (null_score >= beta)
+					return beta;
+			} else {
+				if (null_score <= alpha)
+					return alpha;
+			}
+		}
+	}
+
 	struct move pseudo_moves[224];
 	int scores[224];
 
 	// generate pseudo-legal moves
 	uint move_count = generate_and_score_moves<Turn, false, false>(
-		&b, pseudo_moves, scores, white, black, hash_move, killer_moves[ply]);
+		&b, pseudo_moves, scores, white, black, hash_move, killer_moves[ply], history[Turn]);
 
 	uint legal_moves_searched = 0;
 	int best_eval = (Turn == WHITE) ? -INF : INF;
@@ -185,8 +212,6 @@ int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (
 		if (scores[i] <= 40 && i > 20) { // filter quiet moves
 			if (depth == 1 && best_eval + 200 < alpha)
 				continue;
-			if (depth >= 2 && depth <= 3)
-				depth--;
 		}
 
 		// avoid checking validity for every move
@@ -198,8 +223,23 @@ int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (
 		struct board next_b = b;
 		make_move(&next_b, pseudo_moves[i]);
 
-		// recursively call the opposite color's compiled function
-		int eval = alpha_beta<NextTurn>(next_b, depth - 1, alpha, beta, ply + 1, killer_moves);
+		int eval;
+
+		// Late Move Reductions: reduce depth for late quiet moves
+		if (scores[i] < 10000 && legal_moves_searched > 4 && depth >= 3) {
+			eval = alpha_beta<NextTurn>(next_b, depth - 2, alpha, beta, ply + 1, killer_moves, history);
+
+			// re-search at full depth if reduced search improved
+			bool needs_re_search;
+			if constexpr (Turn == WHITE)
+				needs_re_search = (eval > alpha);
+			else
+				needs_re_search = (eval < beta);
+
+			if (needs_re_search)
+				eval = alpha_beta<NextTurn>(next_b, depth - 1, alpha, beta, ply + 1, killer_moves, history);
+		} else
+			eval = alpha_beta<NextTurn>(next_b, depth - 1, alpha, beta, ply + 1, killer_moves, history);
 
 		if constexpr (Turn == WHITE) {
 			if (eval > best_eval) {
@@ -221,6 +261,10 @@ int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (
 					killer_moves[ply][0] = pseudo_moves[i];
 				else
 					killer_moves[ply][1] = pseudo_moves[i];
+
+				// update history heuristic
+				piece_type pt = b.piece(pseudo_moves[i].from);
+				history[Turn][pt][pseudo_moves[i].to] += depth * depth;
 			}
 			break; // Cutoff
 		}
@@ -271,6 +315,8 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 		killer_moves[d][1] = {64, 64};
 	}
 
+	int history[2][7][64] = {};
+
 	b.hash_key = compute_hash(b);
 	if (turn == BLACK) b.hash_key ^= zobrist_turn;
 
@@ -283,18 +329,23 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 
 	// generate root fully-legal moves, with empty hash move
 	uint move_count = (turn == WHITE) ?
-			generate_and_score_moves<WHITE, true, false>(&b, root_moves, scores, white, black, best_move_overall, killer_moves[0]) :
-			generate_and_score_moves<BLACK, true, false>(&b, root_moves, scores, white, black, best_move_overall, killer_moves[0]);
+			generate_and_score_moves<WHITE, true, false>(&b, root_moves, scores, white, black, best_move_overall, killer_moves[0], history[WHITE]) :
+			generate_and_score_moves<BLACK, true, false>(&b, root_moves, scores, white, black, best_move_overall, killer_moves[0], history[BLACK]);
 
 	best_move_overall = root_moves[0];
 	int eval = 0;
 
 	// iterative deepening
+	const int ASPIRATION_WINDOW = 88; // may need more tuning or a stable evaluation 
+
 	for (uint cur_depth = 1; cur_depth <= target_depth; ++cur_depth) {
 		if constexpr (has_time) manager.startSearch();
-		
-		int alpha = -INF;
-		int beta = INF;
+
+		// aspiration window: use narrow window around previous eval for depth > 1 and pray we don't have to redo the search
+		int alpha = (cur_depth > 1) ? eval - ASPIRATION_WINDOW : -INF;
+		int beta  = (cur_depth > 1) ? eval + ASPIRATION_WINDOW :  INF;
+
+aspiration_retry:
 		struct move best_move_this_depth = root_moves[0];
 		int best_eval = (turn == WHITE) ? -INF : INF;
 
@@ -305,8 +356,8 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 			struct board next_b = b;
 			make_move(&next_b, root_moves[i]);
 
-			int current_eval = (turn == WHITE) ? alpha_beta<BLACK>(next_b, cur_depth - 1, alpha, beta, 1, killer_moves) :
-							     alpha_beta<WHITE>(next_b, cur_depth - 1, alpha, beta, 1, killer_moves);
+			int current_eval = (turn == WHITE) ? alpha_beta<BLACK>(next_b, cur_depth - 1, alpha, beta, 1, killer_moves, history) :
+							     alpha_beta<WHITE>(next_b, cur_depth - 1, alpha, beta, 1, killer_moves, history);
 
 			scores[i] = current_eval; // update score array with real evaluation
 
@@ -323,6 +374,14 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 				}
 				beta = std::min(beta, current_eval);
 			}
+		}
+
+		// aspiration window failed; redo search
+		if (cur_depth > 1 && (best_eval <= eval - ASPIRATION_WINDOW || best_eval >= eval + ASPIRATION_WINDOW)) {
+			alpha = -INF; // TODO: gradual widening?
+			beta = INF;
+			printf("shit: %u vs %u\n", best_eval, eval);
+			goto aspiration_retry;
 		}
 
 		eval = best_eval;
