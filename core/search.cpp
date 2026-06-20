@@ -149,20 +149,10 @@ int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (
 		}
 	}
 
-	// TT Probe
-	struct tt_entry &tte = TT[b.hash_key % TT_SIZE];
 	struct move hash_move = {64, 64};
-	if (tte.key == b.hash_key) {
-		hash_move = tte.best_move;
-		if (tte.depth >= depth) {
-			if (tte.flag == EXACT)
-				return tte.score;
-			if (tte.flag == UPPERBOUND && tte.score <= alpha)
-				return tte.score;
-			if (tte.flag == LOWERBOUND && tte.score >= beta)
-				return tte.score;
-		}
-	}
+	int res = tt_probe(b.hash_key, depth, alpha, beta, hash_move);
+	if (res != TT_MAGIC_FAIL_EVAL)
+		return res;
 
 	u64 white, black;
 	get_occupancy(&white, &black, &b);
@@ -200,7 +190,7 @@ int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (
 
 	uint legal_moves_searched = 0;
 	int best_eval = (Turn == WHITE) ? -INF : INF;
-	struct move best_move_this_node = {64, 64};
+	struct move best_move = {64, 64};
 
 	// next turn is determined statically at compile time
 	constexpr piece_color NextTurn = (Turn == WHITE) ? BLACK : WHITE;
@@ -244,13 +234,13 @@ int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (
 		if constexpr (Turn == WHITE) {
 			if (eval > best_eval) {
 				best_eval = eval;
-				best_move_this_node = pseudo_moves[i];
+				best_move = pseudo_moves[i];
 			}
 			alpha = std::max(alpha, eval);
 		} else {
 			if (eval < best_eval) {
 				best_eval = eval;
-				best_move_this_node = pseudo_moves[i];
+				best_move = pseudo_moves[i];
 			}
 			beta = std::min(beta, eval);
 		}
@@ -277,19 +267,14 @@ int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (
 		return 0; // Stalemate
 	}
 
-	// TT Store
-	struct tt_entry &store_tte = TT[b.hash_key % TT_SIZE];
-	store_tte.key = b.hash_key;
-	store_tte.best_move = best_move_this_node;
-	store_tte.score = best_eval;
-	store_tte.depth = depth;
-
+	tt_flag flag;
 	if (best_eval <= original_alpha)
-		store_tte.flag = UPPERBOUND;
+		flag = TT_UPPER;
 	else if (best_eval >= original_beta)
-		store_tte.flag = LOWERBOUND;
+		flag = TT_LOWER;
 	else
-		store_tte.flag = EXACT;
+		flag = TT_EXACT;
+	tt_store(b.hash_key, best_move, best_eval, depth, flag);
 
 	return best_eval;
 }

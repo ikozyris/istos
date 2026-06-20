@@ -19,20 +19,29 @@ extern u64 zobrist_turn;
 extern u64 zobrist_castling[16];
 extern u64 zobrist_ep[65];
 
-extern void init_zobrist();
-extern u64 compute_hash(const struct board &b);
-
-enum tt_flag : u8 {EXACT = 0, LOWERBOUND, UPPERBOUND};
+enum tt_flag : u8 {
+	TT_NONE,
+	TT_EXACT,
+	TT_LOWER,
+	TT_UPPER
+};
 
 struct tt_entry {
-	u64 key;
-	int score;
-	struct move best_move;
-	u8 depth;
-	u8 flag;
+	u64 key = 0;
+	int score = 0;
+	struct move best_move = {64, 64};
+	u8 depth = 0;
+	tt_flag flag = TT_NONE;
 };
 const uint TT_SIZE = 2097152;
 extern tt_entry *TT;
+const int TT_MAGIC_FAIL_EVAL = 2753712680;
+
+extern void init_zobrist();
+extern u64 compute_hash(const struct board &b);
+extern void tt_store(u64 key, move best_move, int score, u8 depth, tt_flag flag);
+extern int tt_probe(u64 key, uint depth, int alpha, int beta, move &outMove);
+
 
 struct board {
 	u64 hash_key = 0;

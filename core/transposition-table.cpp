@@ -40,3 +40,38 @@ u64 compute_hash(const struct board &b) {
 	h ^= zobrist_ep[b.en_passant_sq];
 	return h;
 }
+
+void tt_store(u64 key, move best_move, int score, u8 depth, tt_flag flag) {
+	tt_entry &e = TT[key % TT_SIZE];
+
+	// depth-preferred replacement
+	if (e.key != key && e.depth > depth)
+		return;
+
+	e.key = key;
+	e.best_move = best_move;
+	e.score = score;
+	e.depth = depth;
+	e.flag = flag;
+}
+
+
+int tt_probe(u64 key, uint depth, int alpha, int beta, move &out_move) {
+	tt_entry &e = TT[key % TT_SIZE];
+	if (e.key != key)
+		return TT_MAGIC_FAIL_EVAL;
+
+	out_move = e.best_move;
+
+	if (e.depth < depth)
+		return TT_MAGIC_FAIL_EVAL;
+
+	if (e.flag == TT_EXACT)
+		return e.score;
+	if (e.flag == TT_LOWER && e.score >= beta)
+		return e.score;
+	if (e.flag == TT_UPPER && e.score <= alpha)
+		return e.score;
+
+	return TT_MAGIC_FAIL_EVAL;
+}
