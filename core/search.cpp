@@ -216,7 +216,7 @@ int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (
 		int eval;
 
 		// Late Move Reductions: reduce depth for late quiet moves
-		if (scores[i] < 10000 && legal_moves_searched > 4 && depth >= 3) {
+		if (scores[i] < 5000 && legal_moves_searched > 4 && depth >= 3) {
 			eval = alpha_beta<NextTurn>(next_b, depth - 2, alpha, beta, ply + 1, killer_moves, history);
 
 			// re-search at full depth if reduced search improved
@@ -310,28 +310,28 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 
 	struct move root_moves[224];
 	int scores[224];
-	struct move best_move_overall = {64, 64};
+	struct move best_move_all = {64, 64};
 
 	// generate root fully-legal moves, with empty hash move
 	uint move_count = (turn == WHITE) ?
-			generate_and_score_moves<WHITE, true, false>(&b, root_moves, scores, white, black, best_move_overall, killer_moves[0], history[WHITE]) :
-			generate_and_score_moves<BLACK, true, false>(&b, root_moves, scores, white, black, best_move_overall, killer_moves[0], history[BLACK]);
+			generate_and_score_moves<WHITE, true, false>(&b, root_moves, scores, white, black, best_move_all, killer_moves[0], history[WHITE]) :
+			generate_and_score_moves<BLACK, true, false>(&b, root_moves, scores, white, black, best_move_all, killer_moves[0], history[BLACK]);
 
-	best_move_overall = root_moves[0];
+	best_move_all = root_moves[0];
 	int eval = 0;
 
 	// iterative deepening
-	const int ASPIRATION_WINDOW = 88; // may need more tuning or a stable evaluation 
+	int aspiration_delta = 88; // may need more tuning or a stable evaluation 
 
 	for (uint cur_depth = 1; cur_depth <= target_depth; ++cur_depth) {
 		if constexpr (has_time) manager.startSearch();
 
-		// aspiration window: use narrow window around previous eval for depth > 1
-		int alpha = (cur_depth > 1) ? eval - ASPIRATION_WINDOW : -INF;
-		int beta  = (cur_depth > 1) ? eval + ASPIRATION_WINDOW :  INF;
-
 aspiration_retry:
-		struct move best_move_this_depth = root_moves[0];
+		// aspiration window: use narrow window around previous eval for depth > 1
+		int alpha = (cur_depth > 1) ? eval - aspiration_delta : -INF;
+		int beta  = (cur_depth > 1) ? eval + aspiration_delta :  INF;
+
+		struct move best_move_cur = root_moves[0];
 		int best_eval = (turn == WHITE) ? -INF : INF;
 
 		for (uint i = 0; i < move_count; ++i) {
@@ -341,47 +341,47 @@ aspiration_retry:
 			struct board next_b = b;
 			make_move(&next_b, root_moves[i]);
 
-			int current_eval = (turn == WHITE) ? alpha_beta<BLACK>(next_b, cur_depth - 1, alpha, beta, 1, killer_moves, history) :
-							     alpha_beta<WHITE>(next_b, cur_depth - 1, alpha, beta, 1, killer_moves, history);
+			int current_eval = (turn == WHITE)
+					? alpha_beta<BLACK>(next_b, cur_depth - 1, alpha, beta, 1, killer_moves, history)
+					: alpha_beta<WHITE>(next_b, cur_depth - 1, alpha, beta, 1, killer_moves, history);
 
 			scores[i] = current_eval; // update score array with real evaluation
 
 			if (turn == WHITE) {
 				if (current_eval > best_eval) {
 					best_eval = current_eval;
-					best_move_this_depth = root_moves[i];
+					best_move_cur = root_moves[i];
 				}
 				alpha = std::max(alpha, current_eval);
 			} else {
 				if (current_eval < best_eval) {
 					best_eval = current_eval;
-					best_move_this_depth = root_moves[i];
+					best_move_cur = root_moves[i];
 				}
 				beta = std::min(beta, current_eval);
 			}
 		}
 
 		// aspiration window failed; redo search
-		if (cur_depth > 1 && (best_eval <= eval - ASPIRATION_WINDOW || best_eval >= eval + ASPIRATION_WINDOW)) {
-			alpha = -INF; // TODO: gradual widening?
-			beta = INF;
-			printf("shit: %u vs %u\n", best_eval, eval);
+		if (cur_depth > 1 && (best_eval <= eval - aspiration_delta || best_eval >= eval + aspiration_delta)) {
+			aspiration_delta *= 2;
+			printf("shit: %d vs %d, a: %d b: %d\n", best_eval, eval, alpha, beta);
 			goto aspiration_retry;
 		}
 
 		eval = best_eval;
-		best_move_overall = best_move_this_depth;
+		best_move_all = best_move_cur;
 
-		printf("depth %u: best move: %u to %u, eval: %d\n", cur_depth, best_move_overall.from,
-		       best_move_overall.to, eval);
+		printf("depth %u: best move: %u to %u, eval: %d\n", cur_depth, best_move_all.from,
+		       best_move_all.to, eval);
 
 		if constexpr (has_time) {
-			manager.finishSearch(cur_depth, best_move_this_depth);
+			manager.finishSearch(cur_depth, best_move_cur);
 			bool go = manager.shouldContinue(cur_depth + 1);
 			if (!go)
-				return best_move_overall;
+				return best_move_all;
 		}
 	}
 
-	return best_move_overall;
+	return best_move_all;
 }
