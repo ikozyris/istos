@@ -13,7 +13,7 @@ Sorts legal move with lazy selection sort and scores them using as heuristics:
  - PST tables as default
 
 For quiet move prunning:
- - Aspiration Windows (88 centipawns currently, needs stable evaluation function)
+ - Aspiration Windows
  - Null Move Prunning
  - History Heuristic
  - Late Move Reductions
@@ -42,10 +42,10 @@ Search throughput: more than 8 million legal moves simulated per second (single 
 From starting position:
 | depth | time | nodes       | exp factor | NPS |
 |-------|------|-------------|------------|-----|
-| 10	| 0.2  | 1'764'688   | 3.3	  | 8.8 |
-| 11	| 0.7  | 5'683'887   | 3.2	  | 8.1 |
-| 12	| 2.6  | 21'317'984  | 3.7	  | 8.2 |
-| 13	| 34   | 257'424'907 | 12	  | 7.8 |
+| 10	| 0.12 |     949'391 | 2.5	  | 8   |
+| 11	| 0.36 |   2'995'728 | 3.15	  | 8.3 |
+| 12	| 1.16 |   9'662'326 | 3.23	  | 8.3 |
+| 13	| 15.5 | 120'233'901 | 12.4	  | 7.8 |
 | 14	| >5000 | >40bn      | >160       | 8?  |
 
 Prunning still needs more work

@@ -11,9 +11,9 @@ const short PIECE_WEIGHTS[7] = {
 	900	// QUEEN
 };
 
-const char KNIGHT_MOBILITY_FACTOR = 10;
-const char BISHOP_MOBILITY_FACTOR = 7;
-const char ROOK_MOBILITY_FACTOR = 7;
+const char KNIGHT_MOBILITY_FACTOR = 6;
+const char BISHOP_MOBILITY_FACTOR = 4;
+const char ROOK_MOBILITY_FACTOR = 4;
 
 // PST tables, top left is a8, from white's perspective
 const char PST_BONUS[7][64] = {
@@ -129,7 +129,7 @@ const char PST_ENDGAME[8][64] = {
 */
 
 
-const char PAWN_ISLANDS_PENALTY = 20;
+const char PAWN_ISLANDS_PENALTY = 20; // for some weird reason lowering this increases nodes searched by 40%
 const char DOUBLED_PAWN_PENALTY = 20;
 const unsigned long FILE_MASKS[8] = {
 	0x0101010101010101ul, // a
@@ -144,3 +144,5 @@ const unsigned long FILE_MASKS[8] = {
 
 const char KNIGHT_ADJ[9] = {-20, -16, -12, -8, -4, 0, 4, 8, 12};
 const char ROOK_ADJ[9] = {15, 12, 9, 6, 3, 0, -3, -6, -9};
+
+const int TEMPO_BONUS = 15; // summed inside quiescence search

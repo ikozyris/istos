@@ -96,6 +96,7 @@ int quiescence(board b, int alpha, int beta) {
 	if constexpr (Turn == BLACK) {
 		stand_pat = -stand_pat;
 	}
+	stand_pat += TEMPO_BONUS;
 	
 	if (stand_pat >= beta)
 		return beta;
@@ -321,8 +322,7 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 	int eval = 0;
 
 	// iterative deepening
-	int aspiration_delta = 88; // may need more tuning or a stable evaluation 
-
+	int aspiration_delta = 45;
 	for (uint cur_depth = 1; cur_depth <= target_depth; ++cur_depth) {
 		if constexpr (has_time) manager.startSearch();
 
