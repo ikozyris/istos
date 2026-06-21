@@ -187,7 +187,14 @@ int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (
 			}
 
 			constexpr piece_color NullTurn = (Turn == WHITE) ? BLACK : WHITE;
-			int null_score = alpha_beta<NullTurn, false>(null_b, depth - 1 - 2, alpha, beta, ply + 1, killer_moves, history);
+			int R = 2 + depth / 6;
+			int r_depth = std::max(0, (int)depth - 1 - R);
+			int null_score;
+			if constexpr (Turn == WHITE)
+				null_score = alpha_beta<NullTurn, false>(null_b, r_depth, beta - 1, beta, ply + 1, killer_moves, history);
+			else
+				null_score = alpha_beta<NullTurn, false>(null_b, r_depth, alpha, alpha + 1, ply + 1, killer_moves, history);
+
 			if constexpr (Turn == WHITE) {
 				if (null_score >= beta)
 					return beta;
@@ -276,6 +283,12 @@ int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (
 				// update history heuristic
 				piece_type pt = b.piece(pseudo_moves[i].from);
 				history[Turn][pt][pseudo_moves[i].to] += depth * depth;
+				if (history[Turn][pt][pseudo_moves[i].to] > 8192) {
+					for (uint c = 0; c < 2; ++c)
+						for (uint p = 0; p < 7; ++p)
+							for (uint s = 0; s < 64; ++s)
+								history[c][p][s] /= 2;
+				}
 			}
 			break; // Cutoff
 		}
@@ -343,6 +356,7 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 	best_move_all = root_moves[0];
 	int eval = 0;
 
+	Clock::time_point searchStart = Clock::now();
 	// iterative deepening
 	int aspiration_delta = 45;
 	for (uint cur_depth = 1; cur_depth <= target_depth; ++cur_depth) {
@@ -387,15 +401,17 @@ aspiration_retry:
 		// aspiration window failed; redo search
 		if (cur_depth > 1 && (best_eval <= eval - aspiration_delta || best_eval >= eval + aspiration_delta)) {
 			aspiration_delta *= 2;
-			printf("shit: %d vs %d, a: %d b: %d\n", best_eval, eval, alpha, beta);
+			printf("aspr_wnd retry: %d vs %d, a: %d b: %d\n", best_eval, eval, alpha, beta);
 			goto aspiration_retry;
 		}
 
 		eval = best_eval;
 		best_move_all = best_move_cur;
 
-		printf("depth %u: best move: %u to %u, eval: %d\n", cur_depth, best_move_all.from,
-		       best_move_all.to, eval);
+		Clock::time_point searchEnd = Clock::now();
+		Clock::duration searchDuration = searchEnd - searchStart;
+		printf("depth %u: best move: %u to %u, eval: %d, nodes: %u, time: %.1fms\n", cur_depth, best_move_all.from,
+		       best_move_all.to, eval, nodes, (double)searchDuration.count() / 1e6);
 
 		if constexpr (has_time) {
 			manager.finishSearch(cur_depth, best_move_cur);
