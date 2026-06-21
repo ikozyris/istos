@@ -216,7 +216,7 @@ int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (
 		int eval;
 
 		// Late Move Reductions: reduce depth for late quiet moves
-		if (scores[i] < 5000 && legal_moves_searched > 4 && depth >= 3) {
+		if (scores[i] < 10000 && legal_moves_searched > 4 && depth >= 3) {
 			eval = alpha_beta<NextTurn>(next_b, depth - 2, alpha, beta, ply + 1, killer_moves, history);
 
 			// re-search at full depth if reduced search improved

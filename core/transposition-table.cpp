@@ -44,9 +44,7 @@ u64 compute_hash(const struct board &b) {
 void tt_store(u64 key, move best_move, int score, u8 depth, tt_flag flag) {
 	tt_entry &e = TT[key % TT_SIZE];
 
-	// depth-preferred replacement
-	if (e.key != key && e.depth > depth)
-		return;
+	// always replace
 
 	e.key = key;
 	e.best_move = best_move;
