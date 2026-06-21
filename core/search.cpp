@@ -2,6 +2,22 @@
 #include "attacks.h"
 #include "evaluate-tables.h"
 #include "time-management.h"
+#include <cmath>
+
+int LMR_table[64][256];
+bool LMR_initialized = false;
+void init_LMR() {
+	if (LMR_initialized) return;
+	for (int d = 0; d < 64; ++d) {
+		for (int m = 0; m < 256; ++m) {
+			LMR_table[d][m] = 0;
+			if (d > 2 && m > 4) {
+				LMR_table[d][m] = 1 + std::log(d) * std::log(m) / 2.25;
+			}
+		}
+	}
+	LMR_initialized = true;
+}
 
 inline void pick_best_move(struct move *moves, int *scores, uint current_idx, uint move_count)
 {
@@ -218,7 +234,11 @@ int alpha_beta(board b, uint depth, int alpha, int beta, uint ply, struct move (
 
 		// Late Move Reductions: reduce depth for late quiet moves
 		if (scores[i] < 10000 && legal_moves_searched > 4 && depth >= 3) {
-			eval = alpha_beta<NextTurn>(next_b, depth - 2, alpha, beta, ply + 1, killer_moves, history);
+			uint m_idx = std::min(255u, legal_moves_searched);
+			uint d_idx = std::min(63u, depth);
+			int r = LMR_table[d_idx][m_idx];
+			int r_depth = std::max(0, (int)depth - 1 - r);
+			eval = alpha_beta<NextTurn>(next_b, r_depth, alpha, beta, ply + 1, killer_moves, history);
 
 			// re-search at full depth if reduced search improved
 			bool needs_re_search;
@@ -291,6 +311,8 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 	static bool initialized = false;
 	if (!initialized) {
 		init_zobrist();
+		init_LMR();
+		init_attacks();
 		TT = new tt_entry[TT_BUCKETS * TT_BUCKET_SIZE]();
 		initialized = true;
 	}
