@@ -37,15 +37,15 @@ Incremental evaluation for piece values and PST tables only for middlegame. Then
 
 ## Performance Characteristics
 
-Search throughput: more than 8 million legal moves simulated per second (single thread).
+Search throughput: 8 million legal moves simulated per second (single thread).
 
 From starting position:
 | depth | time | nodes       | exp factor | NPS |
 |-------|------|-------------|------------|-----|
-| 10	| 0.12 |     949'391 | 2.5	  | 8   |
-| 11	| 0.36 |   2'995'728 | 3.15	  | 8.3 |
-| 12	| 1.16 |   9'662'326 | 3.23	  | 8.3 |
-| 13	| 15.5 | 120'233'901 | 12.4	  | 7.8 |
+| 10	| 0.13 |     946'386 | 2.5	  | 7.3 |
+| 11	| 0.39 |   2'929'940 | 3	  | 7.5 |
+| 12	| 1.1  |   8'641'203 | 2.9	  | 7.9 |
+| 13	| 9.36 |  74'266'874 | 8.6	  | 7.9 |
 | 14	| >5000 | >40bn      | >160       | 8?  |
 
 Prunning still needs more work

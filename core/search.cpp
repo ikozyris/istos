@@ -291,7 +291,7 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 	static bool initialized = false;
 	if (!initialized) {
 		init_zobrist();
-		TT = new tt_entry[TT_SIZE]();
+		TT = new tt_entry[TT_BUCKETS * TT_BUCKET_SIZE]();
 		initialized = true;
 	}
 

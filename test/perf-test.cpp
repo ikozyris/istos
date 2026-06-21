@@ -33,5 +33,5 @@ int main()
 	init_time_management(120'000, 1'000);
 	uint depth = 13;
 	struct move a = get_best_move(g_real_board, depth, static_cast<piece_color>(turn));
-	printf("best move: %u -> %u, nodes %u", a.from, a.to, nodes);
+	printf("best move: %u -> %u, nodes %u\n", a.from, a.to, nodes);
 }

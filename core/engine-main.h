@@ -33,9 +33,10 @@ struct tt_entry {
 	u8 depth = 0;
 	tt_flag flag = TT_NONE;
 };
-const uint TT_SIZE = 2097152;
+const uint TT_BUCKETS = 2097152;
+const uint TT_BUCKET_SIZE = 4;
 extern tt_entry *TT;
-const int TT_MAGIC_FAIL_EVAL = 2753712680;
+const int TT_MAGIC_FAIL_EVAL = 275371260;
 
 extern void init_zobrist();
 extern u64 compute_hash(const struct board &b);
