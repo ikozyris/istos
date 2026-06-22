@@ -28,7 +28,7 @@ enum tt_flag : u8 {
 
 struct tt_entry {
 	u64 key = 0;
-	int score = 0;
+	short score = 0;
 	struct move best_move = {64, 64};
 	u8 depth = 0;
 	tt_flag flag = TT_NONE;
@@ -36,12 +36,12 @@ struct tt_entry {
 const uint TT_BUCKETS = 2097152;
 const uint TT_BUCKET_SIZE = 4;
 extern tt_entry *TT;
-const int TT_MAGIC_FAIL_EVAL = 275371260;
+const short TT_MAGIC_FAIL_EVAL = 32000;
 
 extern void init_zobrist();
 extern u64 compute_hash(const struct board &b);
-extern void tt_store(u64 key, move best_move, int score, u8 depth, tt_flag flag);
-extern int tt_probe(u64 key, uint depth, int alpha, int beta, move &outMove);
+extern void tt_store(u64 key, move best_move, short score, u8 depth, tt_flag flag);
+extern short tt_probe(u64 key, uint depth, short alpha, short beta, move &outMove);
 
 
 struct board {
@@ -51,7 +51,7 @@ struct board {
 
 	piece_type sq_board[64];
 
-	int pst_score;
+	short pst_score;
 	u8 en_passant_sq = NO_EP; // 0-63 for the target square, 64 for none
 	// 1st bit (1) queen side, 2nd bit (2) kingside
 	u8 castle_white : 2;

@@ -3,3 +3,4 @@ chess
 core/*.o
 test/*.o
 engine-perf
+perf.data

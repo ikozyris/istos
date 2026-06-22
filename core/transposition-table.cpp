@@ -48,7 +48,7 @@ inline tt_entry *tt_bucket(u64 key) {
 	return &TT[key % TT_BUCKETS];
 }
 
-void tt_store(u64 key, move best_move, int score, u8 depth, tt_flag flag) {
+void tt_store(u64 key, move best_move, short score, u8 depth, tt_flag flag) {
 	tt_entry *bucket = tt_bucket(key);
 
 	for (uint i = 0; i < TT_BUCKET_SIZE; ++i) {
@@ -90,7 +90,7 @@ void tt_store(u64 key, move best_move, int score, u8 depth, tt_flag flag) {
 	bucket[replace_idx].flag = flag;
 }
 
-int tt_probe(u64 key, uint depth, int alpha, int beta, move &outMove) {
+short tt_probe(u64 key, uint depth, short alpha, short beta, move &outMove) {
 	tt_entry *bucket = tt_bucket(key);
 
 	for (uint i = 0; i < TT_BUCKET_SIZE; ++i) {

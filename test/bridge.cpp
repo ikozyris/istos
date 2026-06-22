@@ -62,9 +62,6 @@ void sync_from_tui(struct board &dest_board)
 	}
 }
 
-// Forward declarations of your real functions
-bool is_valid_move(const struct move m, struct board b, piece_color turn);
-void make_move(struct board *b, const struct move m);
 
 // TUI interface wrapper for move validation
 extern bool is_valid_move1(u8 from, u8 to)

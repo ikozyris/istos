@@ -63,9 +63,9 @@ uint evaluate_mobility(const board &b, piece_color color, u64 occ) {
 	return mobility_bonus;
 }
 
-int evaluate_board(const board &b)
+short evaluate_board(const board &b)
 {
-	int score = b.pst_score;
+	short score = b.pst_score;
 	u64 occ = b.colors[WHITE] | b.colors[BLACK];
 
 	score += evaluate_mobility(b, WHITE, occ);
