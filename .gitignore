@@ -1,2 +1,5 @@
 .tests/
 chess
+core/*.o
+test/*.o
+engine-perf
