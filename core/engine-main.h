@@ -107,14 +107,14 @@ inline void get_occupancy(u64 *white, u64 *black, const board *b)
 	*black = b->colors[BLACK];
 }
 
-extern bool is_valid_move(struct move m, struct board b, piece_color turn);
-u64 get_piece_pseudo_moves(const board *b, uint pos, u64 white, u64 black);
-extern void make_move(struct board *b, struct move m);
+extern bool is_valid_move(const struct move m, const struct board &b, piece_color turn);
+extern u64 get_piece_pseudo_moves(const board *b, uint pos, u64 white, u64 black);
+extern void make_move(struct board *b, const struct move m);
 
 inline int min(int a, int b) { return a < b ? a : b; }
 inline int max(int a, int b) { return a > b ? a : b; }
 extern struct move get_best_move(struct board b, uint target_depth, piece_color turn);
 
-extern uint nodes;
+extern u64 nodes;
 
 extern void init_time_management(u64 total, u64 incr);

@@ -67,7 +67,7 @@ short score_move(const board *b, struct move m, struct move hash_move, const str
 	return (int)PST_BONUS[attacker][to] + history[attacker][m.to]; // default for quiet moves
 }
 
-const short INF = 30000;
+const short INF = 32000;
 short evaluate_board(const board &b);
 
 template <piece_color Turn, bool FullyLegal, bool OnlyCaptures>
@@ -106,7 +106,7 @@ uint generate_and_score_moves(const board *b, struct move *moves, short *scores,
 }
 
 template <piece_color Turn>
-short quiescence(board b, short alpha, short beta) {
+short quiescence(const board &b, short alpha, short beta) {
 	short stand_pat = evaluate_board(b); // current evaluation if we don't do any captures
 	
 	if constexpr (Turn == BLACK) {
@@ -153,7 +153,7 @@ short quiescence(board b, short alpha, short beta) {
 }
 
 template <piece_color Turn, bool AllowNull = true>
-short alpha_beta(board b, uint depth, short alpha, short beta, uint ply, struct move (&killer_moves)[32][2], int (&history)[2][7][64])
+short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, struct move (&killer_moves)[32][2], int (&history)[2][7][64])
 {
 	short original_alpha = alpha;
 	short original_beta = beta;

@@ -1,7 +1,7 @@
 #include "engine-main.h"
 
 inline int iabs(int a) { return a >= 0 ? a : -a; }
-uint nodes;
+u64 nodes;
 void make_move(struct board *b, const struct move m)
 {
 	piece_type type = b->piece(m.from);

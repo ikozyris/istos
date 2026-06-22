@@ -116,7 +116,7 @@ u64 get_piece_pseudo_moves(const board *b, uint pos, u64 white, u64 black)
 }
 
 // board is passed by value to allow simulating move
-bool is_valid_move(const struct move m, struct board b, piece_color turn)
+bool is_valid_move(const struct move m, const struct board &b, piece_color turn)
 {
 	if (m.from >= 64 || m.to >= 64)
 		return false;
@@ -129,24 +129,36 @@ bool is_valid_move(const struct move m, struct board b, piece_color turn)
 	if (col != turn)
 		return false;
 
-	u64 white, black;
-	get_occupancy(&white, &black, &b);
+	// TODO: one global table with move undo
+	// simulate move inline without hashing
+	struct board next_b; // copy of table
+	next_b.colors[WHITE] = b.colors[WHITE];
+	next_b.colors[BLACK] = b.colors[BLACK];
+	for (uint i = 0; i < 7; i++)
+		next_b.pieces[i] = b.pieces[i];
 
-	// during search, input is always correct
-	//u64 pseudo_moves = get_piece_pseudo_moves(b, m.from, white, black);
-	//if (!(pseudo_moves & (1ul << m.to))) return false;
+	u64 from_mask = 1ull << m.from;
+	u64 to_mask = 1ull << m.to;
 
-	// simulate move
 	if (type == PAWN && m.to == b.en_passant_sq) {
 		uint ep_capture_sq = (col == WHITE) ? m.to + 8 : m.to - 8;
-		b.set_piece(EMPTY, WHITE, ep_capture_sq);
+		u64 ep_mask = 1ull << ep_capture_sq;
+		piece_color enemy_col = (col == WHITE) ? BLACK : WHITE;
+		next_b.pieces[PAWN] &= ~ep_mask;
+		next_b.colors[enemy_col] &= ~ep_mask;
 	}
 
-	b.set_piece(type, col, m.to);
-	b.set_piece(EMPTY, WHITE, m.from);
+	piece_type cap_type = b.piece(m.to);
+	if (cap_type != EMPTY) {
+		piece_color enemy_col = (col == WHITE) ? BLACK : WHITE;
+		next_b.pieces[cap_type] &= ~to_mask;
+		next_b.colors[enemy_col] &= ~to_mask;
+	}
 
-	u64 new_white, new_black;
-	get_occupancy(&new_white, &new_black, &b);
+	next_b.pieces[type] &= ~from_mask;
+	next_b.pieces[type] |= to_mask;
+	next_b.colors[col] &= ~from_mask;
+	next_b.colors[col] |= to_mask;
 
-	return !is_in_check(&b, col, new_black | new_white);
+	return !is_in_check(&next_b, col, next_b.colors[WHITE] | next_b.colors[BLACK]);
 }
