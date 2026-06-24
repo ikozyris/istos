@@ -64,7 +64,7 @@ short score_move(const board *b, struct move m, struct move hash_move, const str
 		return 10000;
 
 	uint to = turn == WHITE ? m.to : m.to ^ 56;
-	return (int)PST_BONUS[attacker][to] + history[attacker][m.to]; // default for quiet moves
+	return pst_score(b) + history[attacker][m.to]; // default for quiet moves
 }
 
 const short INF = 32000;
@@ -410,7 +410,7 @@ aspiration_retry:
 
 		Clock::time_point searchEnd = Clock::now();
 		Clock::duration searchDuration = searchEnd - searchStart;
-		printf("depth %u: best move: %u to %u, eval: %d, nodes: %u, time: %.1fms\n", cur_depth, best_move_all.from,
+		printf("depth %u: best move: %u to %u, eval: %d, nodes: %lu, time: %.1fms\n", cur_depth, best_move_all.from,
 		       best_move_all.to, eval, nodes, (double)searchDuration.count() / 1e6);
 
 		if constexpr (has_time) {

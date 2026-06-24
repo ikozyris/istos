@@ -65,7 +65,7 @@ uint evaluate_mobility(const board &b, piece_color color, u64 occ) {
 
 short evaluate_board(const board &b)
 {
-	short score = b.pst_score;
+	short score = pst_score(&b);
 	u64 occ = b.colors[WHITE] | b.colors[BLACK];
 
 	score += evaluate_mobility(b, WHITE, occ);

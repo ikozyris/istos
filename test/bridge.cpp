@@ -55,7 +55,7 @@ void sync_from_tui(struct board &dest_board)
 		piece_type t;
 		piece_color c;
 		if (char_to_piece(board[i], t, c)) {
-			dest_board.set_piece(t, c, i);			
+			dest_board.set_piece(t, c, i);
 		} else {
 			dest_board.set_piece(EMPTY, WHITE, i);
 		}

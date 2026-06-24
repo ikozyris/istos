@@ -51,7 +51,9 @@ struct board {
 
 	piece_type sq_board[64];
 
-	short pst_score;
+	short pst_mg_score;
+	short pst_eg_score;
+	u8 phase; // sum of piece values
 	u8 en_passant_sq = NO_EP; // 0-63 for the target square, 64 for none
 	// 1st bit (1) queen side, 2nd bit (2) kingside
 	u8 castle_white : 2;
@@ -77,11 +79,14 @@ struct board {
 			pieces[old_type] &= ~mask;
 			colors[old_col]  &= ~mask;
 
-			// lazy evaluation
-			if (old_col == WHITE)
-				pst_score -= PIECE_WEIGHTS[old_type] + PST_BONUS[old_type][pos];
-			else
-				pst_score += PIECE_WEIGHTS[old_type] + PST_BONUS[old_type][pos ^ 56];
+			phase -= PIECE_WEIGHTS[old_type] / 128;
+			if (old_col == WHITE) { // lazy evaluation
+				pst_mg_score -= PIECE_WEIGHTS[old_type] + pst_mg[old_type][pos];
+				pst_eg_score -= PIECE_WEIGHTS[old_type] + pst_eg[old_type][pos];
+			} else {
+				pst_mg_score += PIECE_WEIGHTS[old_type] + pst_mg[old_type][pos ^ 56];
+				pst_eg_score += PIECE_WEIGHTS[old_type] + pst_eg[old_type][pos ^ 56];
+			}
 		}
 
 		if (type != EMPTY) { // add new piece
@@ -90,12 +95,15 @@ struct board {
 			pieces[type] |= mask;
 			colors[col]  |= mask;
 
-			if (col == WHITE)
-				pst_score += PIECE_WEIGHTS[type] + PST_BONUS[type][pos];
-			else
-				pst_score -= PIECE_WEIGHTS[type] + PST_BONUS[type][pos ^ 56];
+			phase += PIECE_WEIGHTS[type] / 128;
+			if (col == WHITE) {
+				pst_mg_score += PIECE_WEIGHTS[type] + pst_mg[type][pos];
+				pst_eg_score += PIECE_WEIGHTS[type] + pst_eg[type][pos];
+			} else {
+				pst_mg_score -= PIECE_WEIGHTS[type] + pst_mg[type][pos ^ 56];
+				pst_eg_score -= PIECE_WEIGHTS[type] + pst_eg[type][pos ^ 56];
+			}
 		}
-
 		sq_board[pos] = type;
 	}
 };
@@ -110,10 +118,10 @@ inline void get_occupancy(u64 *white, u64 *black, const board *b)
 extern bool is_valid_move(const struct move m, const struct board &b, piece_color turn);
 extern u64 get_piece_pseudo_moves(const board *b, uint pos, u64 white, u64 black);
 extern void make_move(struct board *b, const struct move m);
-
-inline int min(int a, int b) { return a < b ? a : b; }
-inline int max(int a, int b) { return a > b ? a : b; }
 extern struct move get_best_move(struct board b, uint target_depth, piece_color turn);
+inline short pst_score(const struct board *b) { // phase could overflow from promotions but in that case nobody cares
+	return (b->pst_mg_score * b->phase + b->pst_eg_score * (256 - b->phase)) / 256;
+}
 
 extern u64 nodes;
 

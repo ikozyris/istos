@@ -40,7 +40,6 @@ u64 mask_bishop(uint pos) {
 	return mask;
 }
 
-// Generates the actual attack bitboard for a specific occupancy (using your logic)
 u64 generate_rook_attacks_slow(uint pos, u64 occ) {
 	u64 attacks = 0;
 	int r = pos / 8, f = pos % 8;
