@@ -115,7 +115,6 @@ u64 get_piece_pseudo_moves(const board *b, uint pos, u64 white, u64 black)
 	return attacks & ~friendly;
 }
 
-// board is passed by value to allow simulating move
 bool is_valid_move(const struct move m, const struct board &b, piece_color turn)
 {
 	if (m.from >= 64 || m.to >= 64)

@@ -7,7 +7,7 @@
 // Resets the board to the classic chess starting position
 void set_starting_position()
 {
-	const char *start_layout = "rnbqkbnr"
+	constexpr char *start_layout = "rnbqkbnr"
 				   "pppppppp"
 				   "        "
 				   "        "
@@ -16,6 +16,8 @@ void set_starting_position()
 				   "PPPPPPPP"
 				   "RNBQKBNR";
 
+	static_assert(start_layout[64] == 0);
+	
 	for (int i = 0; i < 64; ++i)
 		board[i] = start_layout[i];
 	turn = WHITE;

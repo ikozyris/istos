@@ -35,7 +35,7 @@ short score_move(const board *b, struct move m, struct move hash_move, const str
 {
 	// Principal Variation from previous iteration
 	if (m.from == hash_move.from && m.to == hash_move.to)
-		return 30000;
+		return 29000;
 
 	piece_type attacker = b->piece(m.from);
 	piece_type victim = b->piece(m.to);
@@ -55,7 +55,7 @@ short score_move(const board *b, struct move m, struct move hash_move, const str
 		return 20000 + (100 * 10) - 100;
 
 	else if (attacker == PAWN && (m.to >= 56 || m.to <= 8)) // promotion
-		return 30000;
+		return 28000;
 
 	if (m.from == killer_moves[0].from && m.to == killer_moves[0].to)
 		return 15000;
@@ -67,7 +67,7 @@ short score_move(const board *b, struct move m, struct move hash_move, const str
 	return pst_score(b) + history[attacker][m.to]; // default for quiet moves
 }
 
-const short INF = 32000;
+const short INF = 31000;
 short evaluate_board(const board &b);
 
 template <piece_color Turn, bool FullyLegal, bool OnlyCaptures>
@@ -240,7 +240,7 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 		short eval;
 
 		// Late Move Reductions: reduce depth for late quiet moves
-		if (scores[i] < 10000 && legal_moves_searched > 4 && depth >= 3) {
+		if (scores[i] < 9000 && legal_moves_searched > 4 && depth >= 3) {
 			uint m_idx = std::min(255u, legal_moves_searched);
 			uint d_idx = std::min(63u, depth);
 			int r = LMR_table[d_idx][m_idx];
@@ -376,9 +376,9 @@ void search_loop(
 	struct move& best_move_cur
 ) {
 aspiration_retry:
-	// aspiration window: use narrow window around previous eval for depth > 1
-	short alpha = (cur_depth > 1) ? eval - aspiration_delta : -INF;
-	short beta  = (cur_depth > 1) ? eval + aspiration_delta :  INF;
+	// aspiration window: use narrow window around previous eval
+	short alpha = (cur_depth > 3) ? eval - aspiration_delta : -INF;
+	short beta  = (cur_depth > 3) ? eval + aspiration_delta :  INF;
 
 	short best_eval = (turn == WHITE) ? -INF : INF;
 
@@ -411,10 +411,15 @@ aspiration_retry:
 	}
 
 	// aspiration window failed; redo search
-	if (cur_depth > 1 && (best_eval <= eval - aspiration_delta || best_eval >= eval + aspiration_delta)) {
-		aspiration_delta *= 2;
-		printf("aspr_wnd retry: %d vs %d, a: %d b: %d\n", best_eval, eval, alpha, beta);
-		goto aspiration_retry;
+	if (cur_depth > 3 && (best_eval <= eval - aspiration_delta || best_eval >= eval + aspiration_delta)) {
+		if (best_eval > INF - 900 || best_eval < -INF + 900) { // skip aspiration entirely for mates
+			alpha = -INF;
+			beta  =  INF;
+		} else {
+			aspiration_delta *= 2;
+			printf("aspr_wnd retry: %d vs %d, a: %d b: %d\n", best_eval, eval, alpha, beta);
+			goto aspiration_retry;
+		}
 	}
 
 	eval = best_eval;

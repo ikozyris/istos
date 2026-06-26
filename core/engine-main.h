@@ -95,6 +95,9 @@ struct board {
 			pieces[type] |= mask;
 			colors[col]  |= mask;
 
+
+			// phase could overflow from promotions but in that case nobody cares since the
+			// material gain outways anything
 			phase += PIECE_WEIGHTS[type] / 128;
 			if (col == WHITE) {
 				pst_mg_score += PIECE_WEIGHTS[type] + pst_mg[type][pos];
@@ -144,8 +147,9 @@ extern void search_loop(
 	struct move& best_move_cur
 );
 extern struct move get_best_move(struct board b, uint target_depth, piece_color turn);
-inline short pst_score(const struct board *b) { // phase could overflow from promotions but in that case nobody cares
-	return (b->pst_mg_score * b->phase + b->pst_eg_score * (256 - b->phase)) / 256;
+inline short pst_score(const struct board *b) {
+	uint phase = b->phase - 210; // kings alone sum 210
+	return (b->pst_mg_score * phase + b->pst_eg_score * (46 - phase)) / 64;
 }
 
 extern u64 nodes;
