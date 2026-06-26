@@ -2,7 +2,7 @@
 
 // --- TUI Compatibility Layer Global State ---
 char board[64];
-bool turn;
+bool turn; // white=0
 
 // We need a global instance of your new board struct to track the real state
 struct board g_real_board;
@@ -39,7 +39,7 @@ static bool char_to_piece(char c, piece_type& type, piece_color& col) {
 // Call this right after modifying g_real_board to update the TUI variables
 void sync_to_tui(const struct board &src_board, piece_color current_turn)
 {
-	for (int i = 0; i < 64; ++i) {
+	for (uint i = 0; i < 64; ++i) {
 		piece_type t = src_board.piece(i);
 		piece_color c = src_board.color(i);
 		board[i] = piece_to_char[static_cast<u64>(c)][static_cast<u64>(t)];
@@ -51,7 +51,7 @@ void sync_to_tui(const struct board &src_board, piece_color current_turn)
 // and need to push those changes back into your depth-search struct.
 void sync_from_tui(struct board &dest_board)
 {
-	for (int i = 0; i < 64; ++i) {
+	for (uint i = 0; i < 64; ++i) {
 		piece_type t;
 		piece_color c;
 		if (char_to_piece(board[i], t, c)) {
@@ -64,7 +64,7 @@ void sync_from_tui(struct board &dest_board)
 
 
 // TUI interface wrapper for move validation
-extern bool is_valid_move1(u8 from, u8 to)
+extern bool is_valid_move1(u8 from, u8 to) // 
 {
 	struct move m = { from, to };
 	piece_color current_turn = turn ? WHITE : BLACK;

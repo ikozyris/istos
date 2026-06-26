@@ -4,21 +4,23 @@
 #include "../common.h"
 #include "bridge.cpp"
 
-// Resets the board to the classic chess starting position
 void set_starting_position()
 {
-	constexpr char *start_layout = "rnbqkbnr"
-				   "pppppppp"
-				   "        "
-				   "        "
-				   "        "
-				   "        "
-				   "PPPPPPPP"
-				   "RNBQKBNR";
+	const constexpr char *start_layout =
+	       //abcdefgh	
+		"rnbqkbnr"  // 8
+		"pppppppp"
+		"        "  // 6
+		"        "
+		"        "  // 4
+		"        "
+		"PPPPPPPP"
+		"RNBQKBNR"; // 1
+	       //abcdefgh
 
 	static_assert(start_layout[64] == 0);
 	
-	for (int i = 0; i < 64; ++i)
+	for (uint i = 0; i < 64; ++i)
 		board[i] = start_layout[i];
 	turn = WHITE;
 	sync_from_tui(g_real_board);
