@@ -118,6 +118,31 @@ inline void get_occupancy(u64 *white, u64 *black, const board *b)
 extern bool is_valid_move(const struct move m, const struct board &b, piece_color turn);
 extern u64 get_piece_pseudo_moves(const board *b, uint pos, u64 white, u64 black);
 extern void make_move(struct board *b, const struct move m);
+extern void search_init(
+	struct board b, 
+	piece_color turn,
+	struct move (&root_moves)[224],
+	short (&scores)[224],
+	struct move (&killer_moves)[32][2],
+	int (&history)[2][7][64],
+	short& eval,
+	uint& move_count,
+	struct move& best_move_all,
+	short& aspiration_delta
+);
+extern void search_loop(
+	int cur_depth, 
+	short& eval,
+	piece_color turn, 
+	short& aspiration_delta,
+	struct move root_moves[224],
+	struct move (&killer_moves)[32][2],
+	int (&history)[2][7][64],
+	short scores[224],
+	uint move_count,
+	struct board b,
+	struct move& best_move_cur
+);
 extern struct move get_best_move(struct board b, uint target_depth, piece_color turn);
 inline short pst_score(const struct board *b) { // phase could overflow from promotions but in that case nobody cares
 	return (b->pst_mg_score * b->phase + b->pst_eg_score * (256 - b->phase)) / 256;

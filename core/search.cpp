@@ -319,8 +319,18 @@ void init_time_management(u64 time, u64 incr) {
 	manager.setClock(time, incr);
 }
 
-struct move get_best_move(struct board b, uint target_depth, piece_color turn)
-{
+void search_init(
+	struct board b, 
+	piece_color turn,
+	struct move (&root_moves)[224],
+	short (&scores)[224],
+	struct move (&killer_moves)[32][2],
+	int (&history)[2][7][64],
+	short& eval,
+	uint& move_count,
+	struct move& best_move_all,
+	short& aspiration_delta
+) {
 	static bool initialized = false;
 	if (!initialized) {
 		init_zobrist();
@@ -330,13 +340,10 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 		initialized = true;
 	}
 
-	struct move killer_moves[32][2];
 	for (uint d = 0; d < 32; ++d) {
 		killer_moves[d][0] = {64, 64};
 		killer_moves[d][1] = {64, 64};
 	}
-
-	int history[2][7][64] = {};
 
 	b.hash_key = compute_hash(b);
 	if (turn == BLACK) b.hash_key ^= zobrist_turn;
@@ -344,68 +351,120 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 	u64 white, black;
 	get_occupancy(&white, &black, &b);
 
-	struct move root_moves[224];
-	short scores[224];
-	struct move best_move_all = {64, 64};
-
 	// generate root fully-legal moves, with empty hash move
-	uint move_count = (turn == WHITE) ?
+	move_count = (turn == WHITE) ?
 			generate_and_score_moves<WHITE, true, false>(&b, root_moves, scores, white, black, best_move_all, killer_moves[0], history[WHITE]) :
 			generate_and_score_moves<BLACK, true, false>(&b, root_moves, scores, white, black, best_move_all, killer_moves[0], history[BLACK]);
 
 	best_move_all = root_moves[0];
-	short eval = 0;
+	eval = 0;
+
+	aspiration_delta = 45;
+}
+
+void search_loop(
+	int cur_depth, 
+	short& eval,
+	piece_color turn, 
+	short& aspiration_delta,
+	struct move root_moves[224],
+	struct move (&killer_moves)[32][2],
+	int (&history)[2][7][64],
+	short scores[224],
+	uint move_count,
+	struct board b,
+	struct move& best_move_cur
+) {
+aspiration_retry:
+	// aspiration window: use narrow window around previous eval for depth > 1
+	short alpha = (cur_depth > 1) ? eval - aspiration_delta : -INF;
+	short beta  = (cur_depth > 1) ? eval + aspiration_delta :  INF;
+
+	short best_eval = (turn == WHITE) ? -INF : INF;
+
+	for (uint i = 0; i < move_count; ++i) {
+		// sort based on scores array which after depth 1 has real evaluation
+		pick_best_move(root_moves, scores, i, move_count);
+
+		struct board next_b = b;
+		make_move(&next_b, root_moves[i]);
+
+		short current_eval = (turn == WHITE)
+				? alpha_beta<BLACK>(next_b, cur_depth - 1, alpha, beta, 1, killer_moves, history)
+				: alpha_beta<WHITE>(next_b, cur_depth - 1, alpha, beta, 1, killer_moves, history);
+
+		scores[i] = current_eval; // update score array with real evaluation
+
+		if (turn == WHITE) {
+			if (current_eval > best_eval) {
+				best_eval = current_eval;
+				best_move_cur = root_moves[i];
+			}
+			alpha = std::max(alpha, current_eval);
+		} else {
+			if (current_eval < best_eval) {
+				best_eval = current_eval;
+				best_move_cur = root_moves[i];
+			}
+			beta = std::min(beta, current_eval);
+		}
+	}
+
+	// aspiration window failed; redo search
+	if (cur_depth > 1 && (best_eval <= eval - aspiration_delta || best_eval >= eval + aspiration_delta)) {
+		aspiration_delta *= 2;
+		printf("aspr_wnd retry: %d vs %d, a: %d b: %d\n", best_eval, eval, alpha, beta);
+		goto aspiration_retry;
+	}
+
+	eval = best_eval;
+}
+
+struct move get_best_move(struct board b, uint target_depth, piece_color turn)
+{
+	
+	struct move killer_moves[32][2];
+	int history[2][7][64] = {0};
+	short eval;
+	struct move root_moves[224];
+	short scores[224];
+	uint move_count;
+	struct move best_move_all;
+	short aspiration_delta;
+
+	search_init(
+		b,
+		turn,
+		root_moves,
+		scores,
+		killer_moves,
+		history,
+		eval,
+		move_count,
+		best_move_all,
+		aspiration_delta
+	);
 
 	Clock::time_point searchStart = Clock::now();
 	// iterative deepening
-	short aspiration_delta = 45;
 	for (uint cur_depth = 1; cur_depth <= target_depth; ++cur_depth) {
 		if constexpr (has_time) manager.startSearch();
-
-aspiration_retry:
-		// aspiration window: use narrow window around previous eval for depth > 1
-		short alpha = (cur_depth > 1) ? eval - aspiration_delta : -INF;
-		short beta  = (cur_depth > 1) ? eval + aspiration_delta :  INF;
-
 		struct move best_move_cur = root_moves[0];
-		short best_eval = (turn == WHITE) ? -INF : INF;
 
-		for (uint i = 0; i < move_count; ++i) {
-			// sort based on scores array which after depth 1 has real evaluation
-			pick_best_move(root_moves, scores, i, move_count);
+		search_loop(
+			cur_depth,
+			eval,
+			turn,
+			aspiration_delta,
+			root_moves,
+			killer_moves,
+			history,
+			scores,
+			move_count,
+			b,
+			best_move_cur
+		);
 
-			struct board next_b = b;
-			make_move(&next_b, root_moves[i]);
-
-			short current_eval = (turn == WHITE)
-					? alpha_beta<BLACK>(next_b, cur_depth - 1, alpha, beta, 1, killer_moves, history)
-					: alpha_beta<WHITE>(next_b, cur_depth - 1, alpha, beta, 1, killer_moves, history);
-
-			scores[i] = current_eval; // update score array with real evaluation
-
-			if (turn == WHITE) {
-				if (current_eval > best_eval) {
-					best_eval = current_eval;
-					best_move_cur = root_moves[i];
-				}
-				alpha = std::max(alpha, current_eval);
-			} else {
-				if (current_eval < best_eval) {
-					best_eval = current_eval;
-					best_move_cur = root_moves[i];
-				}
-				beta = std::min(beta, current_eval);
-			}
-		}
-
-		// aspiration window failed; redo search
-		if (cur_depth > 1 && (best_eval <= eval - aspiration_delta || best_eval >= eval + aspiration_delta)) {
-			aspiration_delta *= 2;
-			printf("aspr_wnd retry: %d vs %d, a: %d b: %d\n", best_eval, eval, alpha, beta);
-			goto aspiration_retry;
-		}
-
-		eval = best_eval;
 		best_move_all = best_move_cur;
 
 		Clock::time_point searchEnd = Clock::now();
