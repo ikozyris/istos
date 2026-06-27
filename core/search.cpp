@@ -414,7 +414,9 @@ aspiration_retry:
 			beta  =  INF;
 		} else {
 			aspiration_delta *= 2;
+#ifdef LOG
 			printf("aspr_wnd retry: %d vs %d, a: %d b: %d\n", best_eval, eval, alpha, beta);
+#endif
 			goto aspiration_retry;
 		}
 	}
