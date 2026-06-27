@@ -5,18 +5,13 @@
 #include <cmath>
 
 int LMR_table[64][256];
-bool LMR_initialized = false;
 void init_LMR() {
-	if (LMR_initialized) return;
-	for (int d = 0; d < 64; ++d) {
+	for (uint d = 0; d < 64; ++d)
 		for (int m = 0; m < 256; ++m) {
 			LMR_table[d][m] = 0;
-			if (d > 2 && m > 4) {
+			if (d > 2 && m > 4)
 				LMR_table[d][m] = 1 + std::log(d) * std::log(m) / 2.25;
-			}
 		}
-	}
-	LMR_initialized = true;
 }
 
 inline void pick_best_move(struct move *moves, short *scores, uint current_idx, uint move_count)
@@ -31,7 +26,7 @@ inline void pick_best_move(struct move *moves, short *scores, uint current_idx, 
 }
 
 // scores a move for the selection sort algorithm
-short score_move(const board *b, struct move m, struct move hash_move, const struct move *killer_moves, piece_color turn, const int (&history)[7][64])
+short score_move(const board *b, struct move m, struct move hash_move, const struct move *killer_moves, piece_color turn, const short history[7][64])
 {
 	// Principal Variation from previous iteration
 	if (m.from == hash_move.from && m.to == hash_move.to)
@@ -71,7 +66,7 @@ const short INF = 31000;
 short evaluate_board(const board &b);
 
 template <piece_color Turn, bool FullyLegal, bool OnlyCaptures>
-uint generate_and_score_moves(const board *b, struct move *moves, short *scores, u64 white, u64 black, struct move hash_move, const struct move *killer_moves, const int (&history)[7][64])
+uint generate_and_score_moves(const board *b, struct move *moves, short *scores, u64 white, u64 black, struct move hash_move, const struct move *killer_moves, const short history[7][64])
 {
 	uint move_count = 0;
 	u64 my_pieces = (Turn == WHITE) ? white : black;
@@ -128,7 +123,7 @@ short quiescence(const board &b, short alpha, short beta) {
 {
 	const struct move dummy_killers[2] = {{64,64}, {64,64}};
 	struct move dummy_hash_move = {64, 64};
-	const int dummy_history[7][64] = {};
+	const short dummy_history[7][64] = {};
 	move_cnt = generate_and_score_moves<Turn, true, true>(&b, moves, scores, white, black, dummy_hash_move, dummy_killers, dummy_history);
 } // don't waste stack space
 
@@ -153,7 +148,7 @@ short quiescence(const board &b, short alpha, short beta) {
 }
 
 template <piece_color Turn, bool AllowNull = true>
-short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, struct move killer_moves[32][2], int history[2][7][64])
+short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, struct move killer_moves[32][2], short history[2][7][64])
 {
 	short original_alpha = alpha;
 	short original_beta = beta;
@@ -319,25 +314,12 @@ void init_time_management(u64 time, u64 incr) {
 	manager.setClock(time, incr);
 }
 
-void search_init(
-	struct board b, 
-	piece_color turn,
-	struct move root_moves[224],
-	short scores[224],
-	struct move killer_moves[32][2],
-	int history[2][7][64],
-	short &eval,
-	uint &move_count,
-	struct move& best_move_all
-) {
-	static bool initialized = false;
-	if (!initialized) {
-		init_zobrist();
-		init_LMR();
-		init_attacks();
-		TT = new tt_entry[TT_BUCKETS * TT_BUCKET_SIZE]();
-		initialized = true;
-	}
+void search_init(struct board b, piece_color turn, struct move root_moves[224], short scores[224], struct move killer_moves[32][2], 
+		short history[2][7][64], uint &move_count, struct move& best_move_all) {
+	init_zobrist();
+	init_LMR();
+	init_attacks();
+	TT = new tt_entry[TT_BUCKETS * TT_BUCKET_SIZE]();
 
 	for (uint d = 0; d < 32; ++d) {
 		killer_moves[d][0] = {64, 64};
@@ -345,7 +327,6 @@ void search_init(
 	}
 
 	b.hash_key = compute_hash(b);
-	if (turn == BLACK) b.hash_key ^= zobrist_turn;
 
 	u64 white, black;
 	get_occupancy(&white, &black, &b);
@@ -356,21 +337,10 @@ void search_init(
 			generate_and_score_moves<BLACK, true, false>(&b, root_moves, scores, white, black, best_move_all, killer_moves[0], history[BLACK]);
 
 	best_move_all = root_moves[0];
-	eval = 0;
 }
 
-void search_loop(
-	int cur_depth, 
-	short& eval,
-	piece_color turn,
-	struct move root_moves[224],
-	struct move killer_moves[32][2],
-	int history[2][7][64],
-	short scores[224],
-	uint move_count,
-	struct board b,
-	struct move& best_move_cur
-) {
+void search_loop(uint cur_depth, piece_color turn, struct move root_moves[224], struct move killer_moves[32][2], short history[2][7][64],
+		short scores[224], uint move_count, const struct board &b, short &eval, struct move &best_move_cur) {
 	short aspiration_delta = 45;
 aspiration_retry:
 	// aspiration window: use narrow window around previous eval
@@ -426,26 +396,15 @@ aspiration_retry:
 
 struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 {
-	
 	struct move killer_moves[32][2];
-	int history[2][7][64] = {0};
-	short eval;
+	short history[2][7][64] = {};
+	short eval = 0;
 	struct move root_moves[224];
 	short scores[224];
 	uint move_count;
 	struct move best_move_all;
 
-	search_init(
-		b,
-		turn,
-		root_moves,
-		scores,
-		killer_moves,
-		history,
-		eval,
-		move_count,
-		best_move_all
-	);
+	search_init(b, turn, root_moves, scores, killer_moves, history, move_count, best_move_all);
 
 	Clock::time_point searchStart = Clock::now();
 	// iterative deepening
@@ -453,18 +412,8 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 		if constexpr (has_time) manager.startSearch();
 		struct move best_move_cur = root_moves[0];
 
-		search_loop(
-			cur_depth,
-			eval,
-			turn,
-			root_moves,
-			killer_moves,
-			history,
-			scores,
-			move_count,
-			b,
-			best_move_cur
-		);
+		search_loop(cur_depth, turn, root_moves, killer_moves,
+			history, scores, move_count, b,	eval, best_move_cur);
 
 		best_move_all = best_move_cur;
 

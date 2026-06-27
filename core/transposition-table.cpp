@@ -41,6 +41,7 @@ u64 compute_hash(const struct board &b)
 	}
 	h ^= zobrist_castling[b.castle_white | (b.castle_black << 2)];
 	h ^= zobrist_ep[b.en_passant_sq];
+	h ^= zobrist_turn;
 	return h;
 }
 

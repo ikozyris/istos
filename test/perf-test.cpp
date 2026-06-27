@@ -33,7 +33,7 @@ int main()
 	set_starting_position();
 	printf("\ta\t%u\n", g_real_board.phase);
 	init_time_management(120'000, 1'000);
-	uint depth = 10;
+	uint depth = 18;
 	struct move a = get_best_move(g_real_board, depth, static_cast<piece_color>(turn));
 	printf("best move: %u -> %u, nodes %lu\n", a.from, a.to, nodes);
 }
