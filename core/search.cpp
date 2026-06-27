@@ -153,7 +153,7 @@ short quiescence(const board &b, short alpha, short beta) {
 }
 
 template <piece_color Turn, bool AllowNull = true>
-short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, struct move (&killer_moves)[32][2], int (&history)[2][7][64])
+short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, struct move killer_moves[32][2], int history[2][7][64])
 {
 	short original_alpha = alpha;
 	short original_beta = beta;
@@ -322,14 +322,13 @@ void init_time_management(u64 time, u64 incr) {
 void search_init(
 	struct board b, 
 	piece_color turn,
-	struct move (&root_moves)[224],
-	short (&scores)[224],
-	struct move (&killer_moves)[32][2],
-	int (&history)[2][7][64],
-	short& eval,
-	uint& move_count,
-	struct move& best_move_all,
-	short& aspiration_delta
+	struct move root_moves[224],
+	short scores[224],
+	struct move killer_moves[32][2],
+	int history[2][7][64],
+	short &eval,
+	uint &move_count,
+	struct move& best_move_all
 ) {
 	static bool initialized = false;
 	if (!initialized) {
@@ -358,23 +357,21 @@ void search_init(
 
 	best_move_all = root_moves[0];
 	eval = 0;
-
-	aspiration_delta = 45;
 }
 
 void search_loop(
 	int cur_depth, 
 	short& eval,
-	piece_color turn, 
-	short& aspiration_delta,
+	piece_color turn,
 	struct move root_moves[224],
-	struct move (&killer_moves)[32][2],
-	int (&history)[2][7][64],
+	struct move killer_moves[32][2],
+	int history[2][7][64],
 	short scores[224],
 	uint move_count,
 	struct board b,
 	struct move& best_move_cur
 ) {
+	short aspiration_delta = 45;
 aspiration_retry:
 	// aspiration window: use narrow window around previous eval
 	short alpha = (cur_depth > 3) ? eval - aspiration_delta : -INF;
@@ -435,7 +432,6 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 	short scores[224];
 	uint move_count;
 	struct move best_move_all;
-	short aspiration_delta;
 
 	search_init(
 		b,
@@ -446,8 +442,7 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 		history,
 		eval,
 		move_count,
-		best_move_all,
-		aspiration_delta
+		best_move_all
 	);
 
 	Clock::time_point searchStart = Clock::now();
@@ -460,7 +455,6 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 			cur_depth,
 			eval,
 			turn,
-			aspiration_delta,
 			root_moves,
 			killer_moves,
 			history,
