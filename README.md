@@ -1,6 +1,9 @@
 # Chess Engine
 Code under core/
 
+In this repo there are only test programs for the engine, a standard UCI interface is avaiable on 
+a separate [engine-uci-interface](https://git.svlachos.duckdns.org/spiros/engine-uci-interface) repo.
+
 ## Architecture
 
 ### Search
@@ -60,4 +63,4 @@ From starting position:
 | 26	| 349.11 | 2,787,792,198 | 1.77	  | 8.12 |
 | 27	| 534.96 | 4,288,702,476 | 1.54	  | 8.13 |
 
-depth 28 overflowed unsingned int and showed 2583088609 which should mean 6878055904 nodes
+These benchmarks are old and the engine is currently 15% faster (8.8 MN/s and 3% fewer nodes).
