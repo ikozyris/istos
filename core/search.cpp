@@ -314,13 +314,20 @@ void init_time_management(u64 time, u64 incr) {
 	manager.setClock(time, incr);
 }
 
-void search_init(struct board b, piece_color turn, struct move root_moves[224], short scores[224], struct move killer_moves[32][2], 
-		short history[2][7][64], uint &move_count, struct move& best_move_all) {
+void engine_init() {
 	init_zobrist();
 	init_LMR();
 	init_attacks();
 	TT = new tt_entry[TT_BUCKETS * TT_BUCKET_SIZE]();
+}
 
+void tt_clear() {
+	if (TT) std::fill(TT, TT + TT_BUCKETS * TT_BUCKET_SIZE, tt_entry{});
+}
+
+void search_init(struct board b, piece_color turn, struct move root_moves[224], short scores[224], struct move killer_moves[32][2], 
+		short history[2][7][64], uint &move_count, struct move& best_move_all)
+{
 	for (uint d = 0; d < 32; ++d) {
 		killer_moves[d][0] = {64, 64};
 		killer_moves[d][1] = {64, 64};
@@ -340,7 +347,8 @@ void search_init(struct board b, piece_color turn, struct move root_moves[224], 
 }
 
 void search_loop(uint cur_depth, piece_color turn, struct move root_moves[224], struct move killer_moves[32][2], short history[2][7][64],
-		short scores[224], uint move_count, const struct board &b, short &eval, struct move &best_move_cur) {
+		short scores[224], uint move_count, const struct board &b, short &eval, struct move &best_move_cur)
+{
 	short aspiration_delta = 45;
 aspiration_retry:
 	// aspiration window: use narrow window around previous eval

@@ -157,6 +157,7 @@ void play_interactive_game()
 		}
 	}
 
+	engine_init();
 	set_starting_position();
 
 	// If player is Black, engine immediately plays first move for White

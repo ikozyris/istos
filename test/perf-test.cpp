@@ -30,6 +30,7 @@ void set_starting_position()
 
 int main()
 {
+	engine_init();
 	set_starting_position();
 	printf("\ta\t%u\n", g_real_board.phase);
 	init_time_management(120'000, 1'000);

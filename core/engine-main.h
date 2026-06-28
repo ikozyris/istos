@@ -123,6 +123,9 @@ extern u64 get_piece_pseudo_moves(const board *b, uint pos, u64 white, u64 black
 extern void make_move(struct board *b, const struct move m);
 
 // for UCI interface
+extern void engine_init();
+extern void tt_clear();
+
 extern void search_init(struct board b, piece_color turn, struct move root_moves[224], short scores[224], struct move killer_moves[32][2],
 			short history[2][7][64], int &move_count, struct move &best_move_all);
 
