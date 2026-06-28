@@ -325,7 +325,7 @@ void tt_clear() {
 	if (TT) std::fill(TT, TT + TT_BUCKETS * TT_BUCKET_SIZE, tt_entry{});
 }
 
-void search_init(struct board b, piece_color turn, struct move root_moves[224], short scores[224], struct move killer_moves[32][2], 
+void search_init(struct board& b, piece_color turn, struct move root_moves[224], short scores[224], struct move killer_moves[32][2], 
 		short history[2][7][64], uint &move_count, struct move& best_move_all)
 {
 	for (uint d = 0; d < 32; ++d) {
