@@ -127,7 +127,7 @@ extern void engine_init();
 extern void tt_clear();
 
 extern void search_init(struct board b, piece_color turn, struct move root_moves[224], short scores[224], struct move killer_moves[32][2],
-			short history[2][7][64], int &move_count, struct move &best_move_all);
+			short history[2][7][64], uint &move_count, struct move &best_move_all);
 
 extern void search_loop(uint cur_depth, piece_color turn, struct move root_moves[224], struct move killer_moves[32][2], short history[2][7][64],
 			short scores[224], uint move_count, const struct board &b, short &eval, struct move &best_move_cur);
