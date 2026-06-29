@@ -313,16 +313,16 @@ constexpr bool has_time = false;
 void init_time_management(u64 time, u64 incr) {
 	manager.setClock(time, incr);
 }
+void tt_clear() {
+	if (TT) std::fill(TT, TT + TT_BUCKETS * TT_BUCKET_SIZE, tt_entry{});
+}
 
 void engine_init() {
 	init_zobrist();
 	init_LMR();
 	init_attacks();
-	TT = new tt_entry[TT_BUCKETS * TT_BUCKET_SIZE]();
-}
-
-void tt_clear() {
-	if (TT) std::fill(TT, TT + TT_BUCKETS * TT_BUCKET_SIZE, tt_entry{});
+	TT = (tt_entry*)aligned_alloc(64, TT_BUCKETS * TT_BUCKET_SIZE * sizeof(tt_entry));
+	tt_clear();
 }
 
 void search_init(struct board& b, piece_color turn, struct move root_moves[224], short scores[224], struct move killer_moves[32][2], 

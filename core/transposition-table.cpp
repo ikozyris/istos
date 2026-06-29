@@ -45,25 +45,43 @@ u64 compute_hash(const struct board &b)
 	return h;
 }
 
+// use intermediate vector registers for guaranteed atomicity
+void atomic_write_16(tt_entry* dest, const tt_entry& src) {
+	__m128i val = _mm_load_si128((const __m128i*)&src);
+	_mm_store_si128((__m128i*)dest, val);
+}
+
+tt_entry atomic_read_16(const tt_entry* src) {
+	__m128i val = _mm_load_si128((const __m128i*)src);
+	
+	tt_entry result;
+	_mm_store_si128((__m128i*)&result, val);
+
+	return result;
+}
+
 inline tt_entry *tt_bucket(u64 key) {
 	return &TT[key % TT_BUCKETS];
 }
 
 void tt_store(u64 key, move best_move, short score, u8 depth, tt_flag flag) {
 	tt_entry *bucket = tt_bucket(key);
+	tt_entry tmp_entry;
 
 	for (uint i = 0; i < TT_BUCKET_SIZE; ++i) {
-		if (bucket[i].key == key) {
+		tmp_entry = atomic_read_16(&bucket[i]);
+		if (tmp_entry.key == key) {
 			// save for move ordering
-			if (flag != TT_UPPER || depth >= bucket[i].depth || bucket[i].flag == TT_NONE)
-				bucket[i].best_move = best_move;
+			if (flag != TT_UPPER || depth >= tmp_entry.depth)
+				tmp_entry.best_move = best_move;
 			
 			// overwrite if new data is deeper
-			if (flag == TT_EXACT || depth >= bucket[i].depth) {
-				bucket[i].score = score;
-				bucket[i].depth = depth;
-				bucket[i].flag = flag;
+			if (flag == TT_EXACT || depth >= tmp_entry.depth) {
+				tmp_entry.score = score;
+				tmp_entry.depth = depth;
+				tmp_entry.flag = flag;
 			}
+			atomic_write_16(&bucket[i], tmp_entry);
 			return;
 		}
 	}
@@ -73,43 +91,47 @@ void tt_store(u64 key, move best_move, short score, u8 depth, tt_flag flag) {
 	int min_depth = 9999;
 
 	for (uint i = 0; i < TT_BUCKET_SIZE; ++i) {
-		if (bucket[i].flag == TT_NONE) {
+		tmp_entry = atomic_read_16(&bucket[i]);
+		if (tmp_entry.flag == TT_NONE) {
 			replace_idx = i;
 			break; // found empty slot
 		}
-		if (bucket[i].depth < min_depth) {
-			min_depth = bucket[i].depth;
+		if (tmp_entry.depth < min_depth) {
+			min_depth = tmp_entry.depth;
 			replace_idx = i; // track shallowest for eviction
 		}
 	}
 
 	// write new entry data to chosen slot
-	bucket[replace_idx].key = key;
-	bucket[replace_idx].best_move = best_move;
-	bucket[replace_idx].score = score;
-	bucket[replace_idx].depth = depth;
-	bucket[replace_idx].flag = flag;
+	tmp_entry.key = key;
+	tmp_entry.best_move = best_move;
+	tmp_entry.score = score;
+	tmp_entry.depth = depth;
+	tmp_entry.flag = flag;
+	atomic_write_16(&bucket[replace_idx], tmp_entry);
 }
 
 short tt_probe(u64 key, uint depth, short alpha, short beta, move &outMove) {
 	tt_entry *bucket = tt_bucket(key);
+	tt_entry tmp_entry;
 
 	for (uint i = 0; i < TT_BUCKET_SIZE; ++i) {
-		if (bucket[i].key == key) {
-			if (bucket[i].flag == TT_NONE)
+		tmp_entry = atomic_read_16(&bucket[i]);
+		if (tmp_entry.key == key) {
+			if (tmp_entry.flag == TT_NONE)
 				return TT_MAGIC_FAIL_EVAL;
 
-			outMove = bucket[i].best_move;
+			outMove = tmp_entry.best_move;
 
-			if (bucket[i].depth < depth) // insufficient depth
+			if (tmp_entry.depth < depth) // insufficient depth
 				return TT_MAGIC_FAIL_EVAL;
 
-			if (bucket[i].flag == TT_EXACT)
-				return bucket[i].score;
-			if (bucket[i].flag == TT_UPPER && bucket[i].score <= alpha)
-				return bucket[i].score;
-			if (bucket[i].flag == TT_LOWER && bucket[i].score >= beta)
-				return bucket[i].score;
+			if (tmp_entry.flag == TT_EXACT)
+				return tmp_entry.score;
+			if (tmp_entry.flag == TT_UPPER && tmp_entry.score <= alpha)
+				return tmp_entry.score;
+			if (tmp_entry.flag == TT_LOWER && tmp_entry.score >= beta)
+				return tmp_entry.score;
 
 			return TT_MAGIC_FAIL_EVAL;
 		}

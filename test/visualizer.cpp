@@ -157,7 +157,6 @@ void play_interactive_game()
 		}
 	}
 
-	engine_init();
 	set_starting_position();
 
 	// If player is Black, engine immediately plays first move for White
@@ -333,7 +332,7 @@ void play_interactive_game()
 
 int main()
 {
-	init_attacks();
+	engine_init();
 	sync_to_tui(g_real_board, WHITE);
 	play_interactive_game();
 	return 0;

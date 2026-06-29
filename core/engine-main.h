@@ -26,7 +26,7 @@ enum tt_flag : u8 {
 	TT_UPPER
 };
 
-struct tt_entry {
+struct alignas(16) tt_entry {
 	u64 key = 0;
 	short score = 0;
 	struct move best_move = {64, 64};
