@@ -135,7 +135,8 @@ extern void search_loop(uint cur_depth, piece_color turn, struct move root_moves
 extern struct move get_best_move(struct board b, uint target_depth, piece_color turn);
 
 inline short pst_score(const struct board *b) {
-	uint phase = b->phase - 210; // kings alone sum 210
+	int phase = b->phase - 210; // kings alone sum 210
+	if (phase < 0) phase = 0;
 	return (b->pst_mg_score * phase + b->pst_eg_score * (46 - phase)) / 64;
 }
 
