@@ -138,3 +138,16 @@ short tt_probe(u64 key, uint depth, short alpha, short beta, move &outMove) {
 	}
 	return TT_MAGIC_FAIL_EVAL;
 }
+
+// pass by value to play moves
+uint extract_pv(struct board b, uint max_ply, struct move *pv)
+{
+	uint i;
+	for (i = 0; i < max_ply; ++i) {
+		short res = tt_probe(b.hash_key, 0, 32000, -32000, pv[i]);
+		if (res == TT_MAGIC_FAIL_EVAL)
+			break;
+		make_move(&b, pv[i]);
+	}
+	return i;
+}

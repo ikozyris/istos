@@ -430,6 +430,12 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 		printf("depth %u: best move: %u to %u, eval: %d, nodes: %lu, time: %.1fms\n", cur_depth, best_move_all.from,
 		       best_move_all.to, eval, nodes, (double)searchDuration.count() / 1e6);
 
+		struct move cur_pv[10];
+		uint pv_cnt = extract_pv(b, std::min(cur_depth, 10u), cur_pv);
+		for (uint i = 0; i < pv_cnt; ++i)
+			printf("%u: %u -> %u\t", i, cur_pv[i].from, cur_pv[i].to);
+		putc('\n', stdout);
+
 		if constexpr (has_time) {
 			manager.finishSearch(cur_depth, best_move_cur);
 			bool go = manager.shouldContinue(cur_depth + 1);
