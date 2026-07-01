@@ -66,7 +66,7 @@ extern void init_zobrist();
 extern u64 compute_hash(const struct board &b);
 extern void tt_store(u64 key, move best_move, short score, u8 depth, tt_flag flag);
 extern short tt_probe(u64 key, uint depth, short alpha, short beta, move &outMove);
-extern uint extract_pv(struct board board, uint max_ply, struct move *pv);
+extern uint extract_pv(struct board &board, uint max_ply, struct move *pv);
 
 struct board {
 	u64 hash_key = 0;

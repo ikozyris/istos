@@ -412,39 +412,41 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 	struct move root_moves[224];
 	short scores[224];
 	uint move_count;
-	struct move best_move_all;
+	struct move best_move;
 
-	search_init(b, turn, root_moves, scores, killer_moves, history, move_count, best_move_all);
+	search_init(b, turn, root_moves, scores, killer_moves, history, move_count, best_move);
 
 	Clock::time_point searchStart = Clock::now();
 	// iterative deepening
 	for (uint cur_depth = 1; cur_depth <= target_depth; ++cur_depth) {
 		if constexpr (has_time) manager.startSearch();
-		struct move best_move_cur = root_moves[0];
+		struct move best_move = root_moves[0];
 
 		search_loop(cur_depth, turn, root_moves, killer_moves,
-			history, scores, move_count, b,	eval, best_move_cur);
+			history, scores, move_count, b,	eval, best_move);
 
-		best_move_all = best_move_cur;
 
 		Clock::time_point searchEnd = Clock::now();
 		Clock::duration searchDuration = searchEnd - searchStart;
-		printf("depth %u: best move: %u to %u, eval: %d, nodes: %lu, time: %.1fms\n", cur_depth, best_move_all.from,
-		       best_move_all.to, eval, nodes, (double)searchDuration.count() / 1e6);
-
+		printf("depth %u: best move: %u to %u, eval: %d, nodes: %lu, time: %.1fms\n", cur_depth, best_move.from,
+		       best_move.to, eval, nodes, (double)searchDuration.count() / 1e6);
+{
+		struct board tmp_b = b;
+		make_move(&tmp_b, best_move);
 		struct move cur_pv[10];
-		uint pv_cnt = extract_pv(b, std::min(cur_depth, 10u), cur_pv);
-		for (uint i = 0; i < pv_cnt; ++i)
+		cur_pv[0] = best_move;
+		uint pv_cnt = extract_pv(tmp_b, std::min(cur_depth, 9u), cur_pv + 1);
+		for (uint i = 0; i < pv_cnt + 1; ++i)
 			printf("%u: %u -> %u\t", i, cur_pv[i].from, cur_pv[i].to);
 		putc('\n', stdout);
-
+}
 		if constexpr (has_time) {
-			manager.finishSearch(cur_depth, best_move_cur);
+			manager.finishSearch(cur_depth, best_move);
 			bool go = manager.shouldContinue(cur_depth + 1);
 			if (!go)
-				return best_move_all;
+				return best_move;
 		}
 	}
 
-	return best_move_all;
+	return best_move;
 }

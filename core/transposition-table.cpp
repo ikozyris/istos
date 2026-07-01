@@ -138,8 +138,8 @@ short tt_probe(u64 orig_key, uint depth, short alpha, short beta, move &out_move
 	return TT_MAGIC_FAIL_EVAL;
 }
 
-// pass by value to play moves
-uint extract_pv(struct board b, uint max_ply, struct move *pv)
+// warning: make local copy before calling
+uint extract_pv(struct board &b, uint max_ply, struct move *pv)
 {
 	uint i;
 	for (i = 0; i < max_ply; ++i) {
