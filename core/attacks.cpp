@@ -158,7 +158,7 @@ u64 get_pawn_attacks(uint pos, piece_color color)
 {
 	u64 attacks = 0;
 	uint col = pos & 7;
-	if (col == WHITE) {
+	if (color == WHITE) {
 		if (pos >= 8) {
 			if (col > 0)
 				attacks |= (1ul << (pos - 9)); // up-left
