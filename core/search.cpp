@@ -334,6 +334,8 @@ void search_init(struct board& b, piece_color turn, struct move root_moves[224],
 	}
 
 	b.hash_key = compute_hash(b);
+	if (turn == BLACK)
+		b.hash_key ^= zobrist_turn;
 
 	u64 white, black;
 	get_occupancy(&white, &black, &b);

@@ -41,47 +41,43 @@ u64 compute_hash(const struct board &b)
 	}
 	h ^= zobrist_castling[b.castle_white | (b.castle_black << 2)];
 	h ^= zobrist_ep[b.en_passant_sq];
-	h ^= zobrist_turn;
 	return h;
 }
 
-// use intermediate vector registers for guaranteed atomicity
-void atomic_write_16(tt_entry* dest, const tt_entry& src) {
-	__m128i val = _mm_load_si128((const __m128i*)&src);
-	_mm_store_si128((__m128i*)dest, val);
-}
+// separate functions help isolating read/writes
+inline void atomic_write_8(tt_entry* dest, const tt_entry& src) { *dest = src;  }
+inline tt_entry atomic_read_8(const tt_entry* src) { return *src; }
+inline tt_entry *tt_bucket(u64 key) { return &TT[key % TT_BUCKETS]; }
 
-tt_entry atomic_read_16(const tt_entry* src) {
-	__m128i val = _mm_load_si128((const __m128i*)src);
-	
-	tt_entry result;
-	_mm_store_si128((__m128i*)&result, val);
-
-	return result;
-}
-
-inline tt_entry *tt_bucket(u64 key) {
-	return &TT[key % TT_BUCKETS];
-}
-
-void tt_store(u64 key, move best_move, short score, u8 depth, tt_flag flag) {
-	tt_entry *bucket = tt_bucket(key);
+void tt_store(u64 orig_key, move best_move, short score, u8 depth, tt_flag flag) {
+	tt_entry *bucket = tt_bucket(orig_key); // query lower bits key
 	tt_entry tmp_entry;
 
+	u32 key = (orig_key >> 36) & 0x0FFFFFFFu; // use higher bits for comparison to use the whole key
+
 	for (uint i = 0; i < TT_BUCKET_SIZE; ++i) {
-		tmp_entry = atomic_read_16(&bucket[i]);
-		if (tmp_entry.key == key) {
+		tmp_entry = atomic_read_8(&bucket[i]);
+
+		if (tmp_entry.get_key() == key) {
+			u8  old_depth = tmp_entry.get_depth();
+			move next_move = tmp_entry.get_move();
+			u8  next_depth = old_depth;
+			short next_score = tmp_entry.get_score();
+			tt_flag next_flag = tmp_entry.get_flag();
+
 			// save for move ordering
-			if (flag != TT_UPPER || depth >= tmp_entry.depth)
-				tmp_entry.best_move = best_move;
-			
+			if (flag != TT_UPPER || depth >= old_depth)
+				next_move = best_move;
+
 			// overwrite if new data is deeper
-			if (flag == TT_EXACT || depth >= tmp_entry.depth) {
-				tmp_entry.score = score;
-				tmp_entry.depth = depth;
-				tmp_entry.flag = flag;
+			if (flag == TT_EXACT || depth >= old_depth) {
+				next_score = score;
+				next_depth = depth;
+				next_flag = flag;
 			}
-			atomic_write_16(&bucket[i], tmp_entry);
+
+			tmp_entry.set(key, next_move, next_depth, next_flag, next_score);
+			atomic_write_8(&bucket[i], tmp_entry);
 			return;
 		}
 	}
@@ -91,50 +87,53 @@ void tt_store(u64 key, move best_move, short score, u8 depth, tt_flag flag) {
 	int min_depth = 9999;
 
 	for (uint i = 0; i < TT_BUCKET_SIZE; ++i) {
-		tmp_entry = atomic_read_16(&bucket[i]);
-		if (tmp_entry.flag == TT_NONE) {
+		tmp_entry = atomic_read_8(&bucket[i]);
+
+		if (tmp_entry.get_flag() == TT_NONE) {
 			replace_idx = i;
 			break; // found empty slot
 		}
-		if (tmp_entry.depth < min_depth) {
-			min_depth = tmp_entry.depth;
+		if (tmp_entry.get_depth() < min_depth) {
+			min_depth = tmp_entry.get_depth();
 			replace_idx = i; // track shallowest for eviction
 		}
 	}
 
 	// write new entry data to chosen slot
-	tmp_entry.key = key;
-	tmp_entry.best_move = best_move;
-	tmp_entry.score = score;
-	tmp_entry.depth = depth;
-	tmp_entry.flag = flag;
-	atomic_write_16(&bucket[replace_idx], tmp_entry);
+	tmp_entry.set(key, best_move, depth, flag, score);
+	atomic_write_8(&bucket[replace_idx], tmp_entry);
 }
 
-short tt_probe(u64 key, uint depth, short alpha, short beta, move &outMove) {
-	tt_entry *bucket = tt_bucket(key);
+short tt_probe(u64 orig_key, uint depth, short alpha, short beta, move &out_move) {
+	tt_entry *bucket = tt_bucket(orig_key); // query low bits
 	tt_entry tmp_entry;
 
+	u32 key = (orig_key >> 36) & 0x0FFFFFFFu; // compare high bits
+
 	for (uint i = 0; i < TT_BUCKET_SIZE; ++i) {
-		tmp_entry = atomic_read_16(&bucket[i]);
-		if (tmp_entry.key == key) {
-			if (tmp_entry.flag == TT_NONE)
+		tmp_entry = atomic_read_8(&bucket[i]);
+
+		if (tmp_entry.get_key() == key) {
+			tt_flag entry_flag = tmp_entry.get_flag();
+			if (entry_flag == TT_NONE)
 				return TT_MAGIC_FAIL_EVAL;
 
-			outMove = tmp_entry.best_move;
+			out_move = tmp_entry.get_move();
 
-			if (tmp_entry.depth < depth) // insufficient depth
+			if (tmp_entry.get_depth() < depth) // insufficient depth
 				return TT_MAGIC_FAIL_EVAL;
 
-			if (tmp_entry.flag == TT_EXACT)
-				return tmp_entry.score;
-			if (tmp_entry.flag == TT_UPPER && tmp_entry.score <= alpha)
-				return tmp_entry.score;
-			if (tmp_entry.flag == TT_LOWER && tmp_entry.score >= beta)
-				return tmp_entry.score;
+			short entry_score = tmp_entry.get_score();
+
+			if (entry_flag == TT_EXACT)
+				return entry_score;
+			if (entry_flag == TT_UPPER && entry_score <= alpha)
+				return entry_score;
+			if (entry_flag == TT_LOWER && entry_score >= beta)
+				return entry_score;
 
 			return TT_MAGIC_FAIL_EVAL;
-		}
+        	}
 	}
 	return TT_MAGIC_FAIL_EVAL;
 }

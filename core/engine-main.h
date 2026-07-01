@@ -26,15 +26,39 @@ enum tt_flag : u8 {
 	TT_UPPER
 };
 
-struct alignas(16) tt_entry {
-	u64 key = 0;
-	short score = 0;
-	struct move best_move = {64, 64};
-	u8 depth = 0;
-	tt_flag flag = TT_NONE;
+struct tt_entry {
+	u64 all;
+	// 28 key (effectively += log2(TT_BUCKETS) = 49-bits)
+	// 12 move (TODO: promotions will be handled by moving to invalid squares)
+	// 6 depth (we don't really care about depth 64+)
+	// 2 bound type
+	// 16 eval (could be less but we are just fine with 28 bits key)
+
+	inline u32 get_key() const { return all & 0x0FFFFFFFU; }
+	inline move get_move() const {
+		u32 m = (all >> 28) & 0xFFFu;
+        	return move{ (u8)(m & 0x3Fu), (u8)(m >> 6) };
+	}
+	inline u8 get_depth() const { return (all >> 40) & 0x3Fu; }
+	inline tt_flag get_flag() const { return (tt_flag)((all >> 46) & 0x3u); }
+	inline short get_score() const { return all >> 48; }
+
+	inline void set(u32 key, struct move m, u8 depth, tt_flag flag, short eval) {
+        	u64 packed_move = (m.from & 0x3FU) | ((u64)(m.to & 0x3FU) << 6);
+
+       		all =   (((u64)(u16)eval) << 48) |
+			((u64)((u8)(flag) & 0x3U) << 46) |
+			((u64)(depth & 0x3FU) << 40) |
+			(packed_move << 28) |
+			(key & 0x0FFFFFFFU);
+	}
+
+	tt_entry() {
+		set(0, {64,64}, 0, TT_NONE, 0);
+	}
 };
 const uint TT_BUCKETS = 2097152;
-const uint TT_BUCKET_SIZE = 4;
+const uint TT_BUCKET_SIZE = 8;
 extern tt_entry *TT;
 const short TT_MAGIC_FAIL_EVAL = 32000;
 

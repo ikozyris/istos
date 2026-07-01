@@ -13,13 +13,13 @@ Sorts legal move with lazy selection sort and scores them using as heuristics:
  - last PV move
  - 2 killer moves from sibling branches on same ply
  - MVV/LVA
- - PST tables as default
+ - Move History + PST tables as default
 
-For quiet move prunning:
+For quiet move pruning:
  - Aspiration Windows
- - Null Move Prunning
- - History Heuristic
+ - Null Move Pruning (dynamic depth reduction)
  - Late Move Reductions
+ - Futility Pruning
 
 
 At the start of each call to alpha-beta it tries to retrieve the evaluation from the transposition table, saves evaluation at end of function.
@@ -32,7 +32,15 @@ Utilizes PEXT instructions and lookup tables for rook, bishop and knight. Used f
 
 ### Data Structures
 
-Zobrist hashing for transposition table. Bitboard for white and black pieces + mailbox for fast piece lookups.
+High density lock-less Transposition table:
+ - 8 byte entry, 8 entries per cluster (fits in cache line)
+ - effectively 49-bit key for 2M clusters:
+   - high 28 bits of 64-bit zobrist key
+   - low 21 bits for indexing low 
+ - atomic read/write operations
+ - depth-based replacement
+
+Bitboard for white and black pieces + mailbox for fast piece lookups.
 
 ### Evaluation
 
