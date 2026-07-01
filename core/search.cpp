@@ -326,7 +326,7 @@ void engine_init() {
 }
 
 void search_init(struct board& b, piece_color turn, struct move root_moves[224], short scores[224], struct move killer_moves[32][2], 
-		short history[2][7][64], uint &move_count, struct move& best_move_all)
+		short history[2][7][64], uint &move_count, struct move& best_move)
 {
 	for (uint d = 0; d < 32; ++d) {
 		killer_moves[d][0] = {64, 64};
@@ -342,14 +342,14 @@ void search_init(struct board& b, piece_color turn, struct move root_moves[224],
 
 	// generate root fully-legal moves, with empty hash move
 	move_count = (turn == WHITE) ?
-			generate_and_score_moves<WHITE, true, false>(&b, root_moves, scores, white, black, best_move_all, killer_moves[0], history[WHITE]) :
-			generate_and_score_moves<BLACK, true, false>(&b, root_moves, scores, white, black, best_move_all, killer_moves[0], history[BLACK]);
+			generate_and_score_moves<WHITE, true, false>(&b, root_moves, scores, white, black, best_move, killer_moves[0], history[WHITE]) :
+			generate_and_score_moves<BLACK, true, false>(&b, root_moves, scores, white, black, best_move, killer_moves[0], history[BLACK]);
 
-	best_move_all = root_moves[0];
+	best_move = root_moves[0];
 }
 
 void search_loop(uint cur_depth, piece_color turn, struct move root_moves[224], struct move killer_moves[32][2], short history[2][7][64],
-		short scores[224], uint move_count, const struct board &b, short &eval, struct move &best_move_cur)
+		short scores[224], uint move_count, const struct board &b, short &eval, struct move &best_move)
 {
 	short aspiration_delta = 45;
 aspiration_retry:
@@ -375,13 +375,13 @@ aspiration_retry:
 		if (turn == WHITE) {
 			if (current_eval > best_eval) {
 				best_eval = current_eval;
-				best_move_cur = root_moves[i];
+				best_move = root_moves[i];
 			}
 			alpha = std::max(alpha, current_eval);
 		} else {
 			if (current_eval < best_eval) {
 				best_eval = current_eval;
-				best_move_cur = root_moves[i];
+				best_move = root_moves[i];
 			}
 			beta = std::min(beta, current_eval);
 		}
@@ -420,7 +420,7 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 	// iterative deepening
 	for (uint cur_depth = 1; cur_depth <= target_depth; ++cur_depth) {
 		if constexpr (has_time) manager.startSearch();
-		struct move best_move = root_moves[0];
+		best_move = root_moves[0];
 
 		search_loop(cur_depth, turn, root_moves, killer_moves,
 			history, scores, move_count, b,	eval, best_move);
