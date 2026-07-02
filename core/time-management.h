@@ -75,7 +75,7 @@ public:
 		}
 
 		// stable PV at reasonable depth
-		if (lastDepth >= 8 && pvStable(0.5) && !unstable)
+		if (lastDepth >= 14 && pvStable(0.5) && !unstable)
 			return false;
 
 		return true;
