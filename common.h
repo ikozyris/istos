@@ -12,6 +12,7 @@
 #include <limits>
 #include <xmmintrin.h>
 #include <cstring>
+#include <math.h>
 
 typedef unsigned long u64; // 64-bit bitboard: bit i set means square i is occupied
 typedef unsigned int u32;

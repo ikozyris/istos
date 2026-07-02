@@ -1,8 +1,6 @@
 #include "engine-main.h"
 #include "attacks.h"
 #include "evaluate-tables.h"
-#include "time-management.h"
-#include <cmath>
 
 int LMR_table[64][256];
 void init_LMR() {
