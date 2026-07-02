@@ -2,10 +2,12 @@
 #include "attacks.h"
 #include "evaluate-tables.h"
 
-int LMR_table[64][256];
+const uint MAX_DEPTH = 32;
+
+int LMR_table[MAX_DEPTH][256];
 void init_LMR() {
-	for (uint d = 0; d < 64; ++d)
-		for (int m = 0; m < 256; ++m) {
+	for (uint d = 0; d < MAX_DEPTH; ++d)
+		for (uint m = 0; m < 256; ++m) {
 			LMR_table[d][m] = 0;
 			if (d > 2 && m > 4)
 				LMR_table[d][m] = 1 + std::log(d) * std::log(m) / 2.25;
@@ -146,7 +148,7 @@ short quiescence(const board &b, short alpha, short beta) {
 }
 
 template <piece_color Turn, bool AllowNull = true>
-short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, struct move killer_moves[32][2], short history[2][7][64])
+short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, struct move killer_moves[MAX_DEPTH][2], short history[2][7][64])
 {
 	short original_alpha = alpha;
 	short original_beta = beta;
@@ -318,10 +320,10 @@ void engine_init() {
 	tt_clear();
 }
 
-void search_init(struct board& b, piece_color turn, struct move root_moves[224], short scores[224], struct move killer_moves[32][2], 
+void search_init(struct board& b, piece_color turn, struct move root_moves[224], short scores[224], struct move killer_moves[MAX_DEPTH][2], 
 		short history[2][7][64], uint &move_count, struct move& best_move)
 {
-	for (uint d = 0; d < 32; ++d) {
+	for (uint d = 0; d < MAX_DEPTH; ++d) {
 		killer_moves[d][0] = {64, 64};
 		killer_moves[d][1] = {64, 64};
 	}
@@ -341,7 +343,7 @@ void search_init(struct board& b, piece_color turn, struct move root_moves[224],
 	best_move = root_moves[0];
 }
 
-void search_loop(uint cur_depth, piece_color turn, struct move root_moves[224], struct move killer_moves[32][2], short history[2][7][64],
+void search_loop(uint cur_depth, piece_color turn, struct move root_moves[224], struct move killer_moves[MAX_DEPTH][2], short history[2][7][64],
 		short scores[224], uint move_count, const struct board &b, short &eval, struct move &best_move)
 {
 	short aspiration_delta = 45;
@@ -399,7 +401,7 @@ aspiration_retry:
 
 struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 {
-	struct move killer_moves[32][2];
+	struct move killer_moves[MAX_DEPTH][2];
 	short history[2][7][64] = {};
 	short eval = 0;
 	struct move root_moves[224];

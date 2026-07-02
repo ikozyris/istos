@@ -1,9 +1,6 @@
 #include "../common.h"
 #include "engine-main.h"
 
-using ms = std::chrono::milliseconds;
-using Clock = std::chrono::steady_clock;
-
 struct TimeRecord {
 	u64 timeMs = 0;
 	uint depth = 0;

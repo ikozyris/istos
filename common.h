@@ -19,3 +19,6 @@ typedef unsigned int u32;
 typedef unsigned int uint;
 typedef unsigned short u16;
 typedef unsigned char u8;
+
+using ms = std::chrono::milliseconds;
+using Clock = std::chrono::steady_clock;
