@@ -54,7 +54,7 @@ void make_move(struct board *b, const struct move m)
 	if (m.from == 0 || m.to == 0)
 		b->castle_black &= ~1;
 
-	if (type == PAWN && (m.to >= 56 || m.to <= 8)) // TODO: underpromotion
+	if (type == PAWN && (m.to >= 56 || m.to < 8)) // TODO: underpromotion
 		type = QUEEN;
 
 	// execute piece move

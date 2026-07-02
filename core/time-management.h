@@ -8,6 +8,7 @@ struct TimeRecord {
 	u64 timeMs = 0;
 	uint depth = 0;
 	move pv;
+	short eval = 0;
 };
 
 class TimeManager {
@@ -37,13 +38,14 @@ public:
 	}
 
 	// call at the end of each completed depth (iterative deepening)
-	void finishSearch(uint depth, move pv) {
+	void finishSearch(uint depth, move pv, short eval) {
 		if (depth > maxDepth) return;
 
 		u64 used = elapsedSinceStartMs();
 		records[depth].timeMs = used;
 		records[depth].depth = depth;
 		records[depth].pv = pv;
+		records[depth].eval = eval;
 
 		lastDepth = depth;
 		totalUsedMs += used;
@@ -64,13 +66,19 @@ public:
 
 		u64 budget = budgetForCurrentMove();
 		u64 projected = projectedNextDepthCost(nextDepth);
+		bool unstable = evalStable(30);
 
 		// predicted next iteration would go into reserve
-		if (projected + safetyReserveMs > budget)
-			return false;
+		if (projected + safetyReserveMs > budget) {
+			if (unstable && remainingMs > projected + (safetyReserveMs / 2)) {
+				// allow going into half of reserve for unstable positions
+			} else {
+				return false;
+			}
+		}
 
 		// stable PV at reasonable depth
-		if (lastDepth >= 8 && pvStable(0.5))
+		if (lastDepth >= 8 && pvStable(0.5) && !unstable)
 			return false;
 
 		return true;
@@ -164,7 +172,8 @@ private:
 		uint matches = 0;
 		uint denom = 0;
 
-		for (uint d = 1; d <= lastDepth; ++d) {
+		// ignore first move
+		for (uint d = 2; d <= lastDepth; ++d) {
 			const move pv = records[d].pv;
 			if (pv.from == 0 && pv.to == 0)
 				continue;
@@ -178,5 +187,13 @@ private:
 
 		double frac = double(matches) / double(denom);
 		return frac >= thresholdFraction;
+	}
+
+	bool evalStable(short margin) const {
+		if (lastDepth < 2) return false;
+		short prev = records[lastDepth - 1].eval;
+		short curr = records[lastDepth].eval;
+		short diff = prev > curr ? prev - curr : curr - prev;
+		return diff > margin;
 	}
 };

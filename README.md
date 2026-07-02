@@ -1,8 +1,10 @@
 # Chess Engine
-Code under core/
+Code in core/
 
 In this repo there are only test programs for the engine, a standard UCI interface is avaiable on 
 a separate [engine-uci-interface](https://git.svlachos.duckdns.org/spiros/engine-uci-interface) repo.
+
+The engine is licensed under the GNU GPL v3.
 
 ## Architecture
 
@@ -44,7 +46,8 @@ Bitboard for white and black pieces + mailbox for fast piece lookups.
 
 ### Evaluation
 
-Incremental evaluation for piece values and PST tables only for middlegame. Then on the whole board mobility and pawn structures.
+Incremental evaluation for piece values and PST with middlegame/endgame interpolation. Then on the whole board mobility and pawn structures.
+PSTs were adapted from Stockfish's legacy HCE evaluation.
 
 ## Performance Characteristics
 

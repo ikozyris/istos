@@ -49,7 +49,7 @@ short score_move(const board *b, struct move m, struct move hash_move, const str
 	else if (attacker == PAWN && m.to == b->en_passant_sq)
 		return 20000 + (100 * 10) - 100;
 
-	else if (attacker == PAWN && (m.to >= 56 || m.to <= 8)) // promotion
+	else if (attacker == PAWN && (m.to >= 56 || m.to < 8)) // promotion
 		return 28000;
 
 	if (m.from == killer_moves[0].from && m.to == killer_moves[0].to)
@@ -308,11 +308,6 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 	return best_eval;
 }
 
-TimeManager manager(16);
-constexpr bool has_time = false;
-void init_time_management(u64 time, u64 incr) {
-	manager.setClock(time, incr);
-}
 void tt_clear() {
 	if (TT) std::fill(TT, TT + TT_BUCKETS * TT_BUCKET_SIZE, tt_entry{});
 }
@@ -419,7 +414,6 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 	Clock::time_point searchStart = Clock::now();
 	// iterative deepening
 	for (uint cur_depth = 1; cur_depth <= target_depth; ++cur_depth) {
-		if constexpr (has_time) manager.startSearch();
 		best_move = root_moves[0];
 
 		search_loop(cur_depth, turn, root_moves, killer_moves,
@@ -430,7 +424,7 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 		Clock::duration searchDuration = searchEnd - searchStart;
 		printf("depth %u: best move: %u to %u, eval: %d, nodes: %lu, time: %.1fms\n", cur_depth, best_move.from,
 		       best_move.to, eval, nodes, (double)searchDuration.count() / 1e6);
-{
+
 		struct board tmp_b = b;
 		make_move(&tmp_b, best_move);
 		struct move cur_pv[10];
@@ -439,13 +433,6 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 		for (uint i = 0; i < pv_cnt + 1; ++i)
 			printf("%u: %u -> %u\t", i, cur_pv[i].from, cur_pv[i].to);
 		putc('\n', stdout);
-}
-		if constexpr (has_time) {
-			manager.finishSearch(cur_depth, best_move);
-			bool go = manager.shouldContinue(cur_depth + 1);
-			if (!go)
-				return best_move;
-		}
 	}
 
 	return best_move;
