@@ -218,7 +218,7 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 		// lazy selection sort: find only the single best move left
 		pick_best_move(pseudo_moves, scores, i, move_count);
 
-		if (scores[i] <= 40 && i > 20) { // filter quiet moves
+		if (scores[i] <= 120 && i > 20) { // filter quiet moves
 			if (depth == 1 && best_eval + 200 < alpha)
 				continue;
 		}
@@ -427,9 +427,9 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 
 		struct board tmp_b = b;
 		make_move(&tmp_b, best_move);
-		struct move cur_pv[10];
+		struct move cur_pv[4];
 		cur_pv[0] = best_move;
-		uint pv_cnt = extract_pv(tmp_b, std::min(cur_depth, 9u), cur_pv + 1);
+		uint pv_cnt = extract_pv(tmp_b, std::min(cur_depth, 3u), cur_pv + 1);
 		for (uint i = 0; i < pv_cnt + 1; ++i)
 			printf("%u: %u -> %u\t", i, cur_pv[i].from, cur_pv[i].to);
 		putc('\n', stdout);
