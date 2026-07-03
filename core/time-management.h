@@ -58,12 +58,12 @@ public:
 		if (nextDepth == 0 || nextDepth > maxDepth) return false;
 
 		// If no meaningful time left, stop (after we reached some usable depth)
-		if (nextDepth >= 3 && remainingMs <= safetyReserveMs + 10)
+		if (nextDepth >= 4 && remainingMs <= safetyReserveMs + 10)
 			return false;
 
 		u64 budget = budgetForCurrentMove();
 		u64 projected = projectedNextDepthCost(nextDepth);
-		bool unstable = evalStable(30);
+		bool unstable = evalStable(35);
 
 		// predicted next iteration would go into reserve
 		if (projected + safetyReserveMs > budget) {
@@ -126,7 +126,7 @@ private:
 		u64 last = records[lastDepth].timeMs;
 		double growth = estimateGrowth();
 
-		uint delta = (nextDepth > lastDepth) ? (nextDepth - lastDepth) : 0;
+		uint delta = nextDepth - lastDepth;
 
 		double proj = double(last);
 		for (uint i = 0; i < delta && i < 6; ++i)
@@ -149,10 +149,9 @@ private:
 		if (a == 0 || b == 0) return 2.0;
 
 		double r = double(b) / double(a);
-
-		// Clamp to sane bounds
+		r += 0.2; // better safe than sorry
 		if (r < 1.1) r = 1.1;
-		if (r > 6.0) r = 6.0;
+		if (r > 2.5) r = 10.0; // super-exponential at very high depths
 
 		return r;
 	}
