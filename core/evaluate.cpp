@@ -74,5 +74,12 @@ short evaluate_board(const board &b)
 	score -= evaluate_pawn_structure(b, WHITE);
 	score += evaluate_pawn_structure(b, BLACK);
 
+	if (b.phase > 230) { // queens still on board
+		uint w_pos = b.pieces[KING] & WHITE;
+		uint b_pos = b.pieces[KING] & BLACK;
+		// subtract a point for each square a queen could move if it were on king (cheap check)
+		score -= __builtin_popcountll(get_bishop_attacks(w_pos, occ)) + __builtin_popcountll(get_rook_attacks(w_pos, occ));
+		score += __builtin_popcountll(get_bishop_attacks(b_pos, occ)) + __builtin_popcountll(get_rook_attacks(b_pos, occ));
+	}
 	return score;
 }

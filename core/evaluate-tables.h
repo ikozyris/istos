@@ -11,9 +11,9 @@ const short PIECE_WEIGHTS[7] = {
 	900	// QUEEN
 };
 
-const char KNIGHT_MOBILITY_FACTOR = 6;
-const char BISHOP_MOBILITY_FACTOR = 4;
-const char ROOK_MOBILITY_FACTOR = 4;
+const char KNIGHT_MOBILITY_FACTOR = 7;
+const char BISHOP_MOBILITY_FACTOR = 5;
+const char ROOK_MOBILITY_FACTOR = 5;
 
 // PST tables, top left is a8, from white's perspective
 const char pst_mg[7][64] = {
@@ -46,7 +46,7 @@ const char pst_mg[7][64] = {
 		 -34,   13,   44,   51,   51,   44,   13,  -34,
 		  -9,   22,   58,   53,   53,   58,   22,   -9,
 		 -67,  -27,    4,   37,   37,    4,  -27,  -67,
-		-127,  -83,  -56,  -26,  -26,  -56,  -83, -127
+		-127,  -83,  -36,  -26,  -26,  -36,  -83, -127
 	},
 	{ // BISHOP
 		-34,    1,  -10,  -16,  -16,  -10,    1,  -34,
@@ -144,7 +144,7 @@ const char pst_eg[7][64] = {
 	}
 };
 
-const char PAWN_ISLANDS_PENALTY = 12;
+const char PAWN_ISLANDS_PENALTY = 10;
 const char DOUBLED_PAWN_PENALTY = 20;
 const unsigned long FILE_MASKS[8] = {
 	0x0101010101010101ul, // a
