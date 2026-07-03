@@ -55,8 +55,10 @@ short score_move(const board *b, struct move m, struct move hash_move, const str
 	if (m.from == killer_moves[1].from && m.to == killer_moves[1].to)
 		return 10000;
 
-	uint to = turn == WHITE ? m.to : m.to ^ 56;
-	return pst_score(b) + history[attacker][m.to]; // default for quiet moves
+	uint from_sq = turn == WHITE ? m.from : m.from ^ 56;
+	uint to_sq   = turn == WHITE ? m.to   : m.to ^ 56;
+	short pst_delta = pst_mg[attacker][to_sq] - pst_mg[attacker][from_sq]; // for endgame history is more important
+	return pst_delta + history[attacker][m.to]; // default for quiet moves
 }
 
 const short INF = 30000;

@@ -151,7 +151,7 @@ private:
 		double r = double(b) / double(a);
 		r += 0.2; // better safe than sorry
 		if (r < 1.1) r = 1.1;
-		if (r > 2.5) r = 10.0; // super-exponential at very high depths
+		if (r > 3.5) r *= 1.5; // super-exponential at very high depths
 
 		return r;
 	}
