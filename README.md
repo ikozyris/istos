@@ -21,8 +21,7 @@ For quiet move pruning:
  - Aspiration Windows
  - Null Move Pruning (dynamic depth reduction)
  - Late Move Reductions
- - Futility Pruning
-
+ - PVS (null window search)
 
 At the start of each call to alpha-beta it tries to retrieve the evaluation from the transposition table, saves evaluation at end of function.
 

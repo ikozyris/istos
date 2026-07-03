@@ -2,16 +2,13 @@
 #include "attacks.h"
 #include "evaluate-tables.h"
 
-const uint MAX_DEPTH = 32;
+const uint MAX_DEPTH = 64;
 
 int LMR_table[MAX_DEPTH][256];
 void init_LMR() {
-	for (uint d = 0; d < MAX_DEPTH; ++d)
-		for (uint m = 0; m < 256; ++m) {
-			LMR_table[d][m] = 0;
-			if (d > 2 && m > 4)
-				LMR_table[d][m] = 1 + std::log(d) * std::log(m) / 2.25;
-		}
+	for (uint d = 3; d < MAX_DEPTH; ++d)
+		for (uint m = 5; m < 256; ++m)
+			LMR_table[d][m] = 1 + std::log(d) * std::log(m) / 2.25;
 }
 
 inline void pick_best_move(struct move *moves, short *scores, uint current_idx, uint move_count)
@@ -62,7 +59,7 @@ short score_move(const board *b, struct move m, struct move hash_move, const str
 	return pst_score(b) + history[attacker][m.to]; // default for quiet moves
 }
 
-const short INF = 31000;
+const short INF = 30000;
 short evaluate_board(const board &b);
 
 template <piece_color Turn, bool FullyLegal, bool OnlyCaptures>
@@ -235,7 +232,10 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 			uint d_idx = std::min(63u, depth);
 			int r = LMR_table[d_idx][m_idx];
 			int r_depth = std::max(0, (int)depth - 1 - r);
-			eval = alpha_beta<NextTurn>(next_b, r_depth, alpha, beta, ply + 1, killer_moves, history);
+			if constexpr (Turn == WHITE)
+				eval = alpha_beta<NextTurn>(next_b, r_depth, alpha, alpha + 1, ply + 1, killer_moves, history);
+			else
+				eval = alpha_beta<NextTurn>(next_b, r_depth, beta - 1, beta, ply + 1, killer_moves, history);
 
 			// re-search at full depth if reduced search improved
 			bool needs_re_search;
@@ -246,8 +246,24 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 
 			if (needs_re_search)
 				eval = alpha_beta<NextTurn>(next_b, depth - 1, alpha, beta, ply + 1, killer_moves, history);
-		} else
+		} else if (legal_moves_searched == 1) {
 			eval = alpha_beta<NextTurn>(next_b, depth - 1, alpha, beta, ply + 1, killer_moves, history);
+		} else {
+			// PVS: null window search for non-PV moves
+			if constexpr (Turn == WHITE)
+				eval = alpha_beta<NextTurn>(next_b, depth - 1, alpha, alpha + 1, ply + 1, killer_moves, history);
+			else
+				eval = alpha_beta<NextTurn>(next_b, depth - 1, beta - 1, beta, ply + 1, killer_moves, history);
+
+			bool needs_re_search;
+			if constexpr (Turn == WHITE)
+				needs_re_search = (eval > alpha);
+			else
+				needs_re_search = (eval < beta);
+
+			if (needs_re_search)
+				eval = alpha_beta<NextTurn>(next_b, depth - 1, alpha, beta, ply + 1, killer_moves, history);
+		}
 
 		if constexpr (Turn == WHITE) {
 			if (eval > best_eval) {
