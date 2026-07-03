@@ -218,11 +218,6 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 		// lazy selection sort: find only the single best move left
 		pick_best_move(pseudo_moves, scores, i, move_count);
 
-		if (depth == 1 && scores[i] <= 150 && i > 20) { // filter quiet moves
-			if (best_eval + 200 < alpha)
-				continue;
-		}
-
 		// avoid checking validity for every move
 		if (!is_valid_move(pseudo_moves[i], b, Turn))
 			continue;
