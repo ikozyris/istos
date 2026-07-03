@@ -234,7 +234,7 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 			uint d_idx = std::min(63u, depth);
 			int r = LMR_table[d_idx][m_idx];
 			int r_depth = std::max(0, (int)depth - 1 - r);
-			if constexpr (Turn == WHITE)
+			if constexpr (Turn == WHITE) // null window
 				eval = alpha_beta<NextTurn>(next_b, r_depth, alpha, alpha + 1, ply + 1, killer_moves, history);
 			else
 				eval = alpha_beta<NextTurn>(next_b, r_depth, beta - 1, beta, ply + 1, killer_moves, history);
@@ -252,7 +252,7 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 			eval = alpha_beta<NextTurn>(next_b, depth - 1, alpha, beta, ply + 1, killer_moves, history);
 		} else {
 			// PVS: null window search for non-PV moves
-			if constexpr (Turn == WHITE)
+			if constexpr (Turn == WHITE) // null window
 				eval = alpha_beta<NextTurn>(next_b, depth - 1, alpha, alpha + 1, ply + 1, killer_moves, history);
 			else
 				eval = alpha_beta<NextTurn>(next_b, depth - 1, beta - 1, beta, ply + 1, killer_moves, history);
