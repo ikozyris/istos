@@ -23,9 +23,9 @@ For quiet move pruning:
  - Late Move Reductions
  - PVS (null window search)
 
-At the start of each call to alpha-beta it tries to retrieve the evaluation from the transposition table, saves evaluation at end of function.
+At the start of each call alpha-beta it tries to retrieve the evaluation from the transposition table, saves evaluation at end of function.
 
-At the end of each depth alpha-beta calls quiescence negamax search to search for captures.
+When depth reaches 0, alpha-beta calls quiescence negamax search to search for captures, which reduces the Horizon Effect.
 
 ### Attack Generation
 
