@@ -2,9 +2,9 @@
 #include "attacks.h"
 #include "evaluate-tables.h"
 
-const uint MAX_DEPTH = 64;
+const uint MAX_DEPTH = 48;
 
-int LMR_table[MAX_DEPTH][256];
+char LMR_table[MAX_DEPTH][256];
 void init_LMR() {
 	for (uint d = 3; d < MAX_DEPTH; ++d)
 		for (uint m = 5; m < 256; ++m)
@@ -359,7 +359,7 @@ void search_init(struct board& b, piece_color turn, struct move root_moves[224],
 void search_loop(uint cur_depth, piece_color turn, struct move root_moves[224], struct move killer_moves[MAX_DEPTH][2], short history[2][7][64],
 		short scores[224], uint move_count, const struct board &b, short &eval, struct move &best_move)
 {
-	short aspiration_delta = 45;
+	short aspiration_delta = 35;
 aspiration_retry:
 	// aspiration window: use narrow window around previous eval
 	short alpha = (cur_depth > 3) ? eval - aspiration_delta : -INF;
@@ -412,6 +412,11 @@ aspiration_retry:
 	eval = best_eval;
 }
 
+#define BOLD  "\x1b[1m"
+#define RESET "\x1b[0m"
+#define GRAY  "\x1b[90m"
+
+constexpr bool timing = false;
 struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 {
 	struct move killer_moves[MAX_DEPTH][2];
@@ -421,6 +426,8 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 	short scores[224];
 	uint move_count;
 	struct move best_move;
+
+	u64 prev_nodes = 20;
 
 	search_init(b, turn, root_moves, scores, killer_moves, history, move_count, best_move);
 
@@ -432,19 +439,29 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 		search_loop(cur_depth, turn, root_moves, killer_moves,
 			history, scores, move_count, b,	eval, best_move);
 
-
-		Clock::time_point searchEnd = Clock::now();
-		Clock::duration searchDuration = searchEnd - searchStart;
-		printf("depth %u: best move: %u to %u, eval: %d, nodes: %lu, time: %.1fms\n", cur_depth, best_move.from,
-		       best_move.to, eval, nodes, (double)searchDuration.count() / 1e6);
+		printf("depth %u: eval: " BOLD "%d" RESET ", nodes: %lu, expf: " BOLD "%.1f" RESET, cur_depth,
+			eval, nodes, (double)nodes / (double)prev_nodes);
+		prev_nodes = nodes;
+		if constexpr (timing) {
+			Clock::time_point searchEnd = Clock::now();
+			Clock::duration searchDuration = searchEnd - searchStart;
+			printf(", time: %.1fms", (double)searchDuration.count() / 1e6);
+		}
+		putc('\n', stdout);
 
 		struct board tmp_b = b;
 		make_move(&tmp_b, best_move);
-		struct move cur_pv[4];
+		struct move cur_pv[5];
 		cur_pv[0] = best_move;
-		uint pv_cnt = extract_pv(tmp_b, std::min(cur_depth, 3u), cur_pv + 1);
-		for (uint i = 0; i < pv_cnt + 1; ++i)
-			printf("%u: %u -> %u\t", i, cur_pv[i].from, cur_pv[i].to);
+		uint pv_cnt = extract_pv(tmp_b, std::min(cur_depth, 4u), cur_pv + 1);
+		uint i = 0;
+		if (turn == BLACK) {
+			printf("1. \t\t" GRAY "%u -> %u" RESET "\n", cur_pv[i].from, cur_pv[i].to);
+			i = 1;
+		}
+		for (; i + 1 <= pv_cnt; i += 2)
+			printf("%u. " BOLD "%u -> %u" RESET "\t" GRAY "%u -> %u" RESET "\n",
+				(i+1)/2+1, cur_pv[i].from, cur_pv[i].to, cur_pv[i + 1].from, cur_pv[i + 1].to);
 		putc('\n', stdout);
 	}
 
