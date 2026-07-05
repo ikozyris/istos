@@ -305,8 +305,9 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 	if (legal_moves_searched == 0) {
 		u64 occ = white | black;
 		if (is_in_check(&b, Turn, occ)) // prefer shorter checkmates
-			return (Turn == WHITE) ? -INF + (100 - depth) : INF - (100 - depth);
-		return 0; // Stalemate
+			best_eval = (Turn == WHITE) ? (-INF + ply*ply) : (INF - ply*ply);
+		else
+			best_eval = 0; // Stalemate
 	}
 
 	tt_flag flag;
@@ -451,9 +452,10 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 
 		struct board tmp_b = b;
 		make_move(&tmp_b, best_move);
-		struct move cur_pv[5];
+		const uint lines = 10;
+		struct move cur_pv[lines];
 		cur_pv[0] = best_move;
-		uint pv_cnt = extract_pv(tmp_b, std::min(cur_depth, 4u), cur_pv + 1);
+		uint pv_cnt = extract_pv(tmp_b, std::min(cur_depth, lines-1), cur_pv + 1);
 		uint i = 0;
 		if (turn == BLACK) {
 			printf("1. \t\t" GRAY "%u -> %u" RESET "\n", cur_pv[i].from, cur_pv[i].to);
