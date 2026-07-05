@@ -102,12 +102,12 @@ uint generate_and_score_moves(const board *b, struct move *moves, short *scores,
 template <piece_color Turn>
 short quiescence(const board &b, short alpha, short beta) {
 	short stand_pat = evaluate_board(b); // current evaluation if we don't do any captures
-	
+
 	if constexpr (Turn == BLACK) {
 		stand_pat = -stand_pat;
 	}
 	stand_pat += TEMPO_BONUS;
-	
+
 	if (stand_pat >= beta)
 		return beta;
 	if (stand_pat > alpha)
@@ -334,7 +334,7 @@ void engine_init() {
 	tt_clear();
 }
 
-void search_init(struct board& b, piece_color turn, struct move root_moves[224], short scores[224], struct move killer_moves[MAX_DEPTH][2], 
+void search_init(struct board& b, piece_color turn, struct move root_moves[224], short scores[224], struct move killer_moves[MAX_DEPTH][2],
 		short history[2][7][64], uint &move_count, struct move& best_move)
 {
 	for (uint d = 0; d < MAX_DEPTH; ++d) {

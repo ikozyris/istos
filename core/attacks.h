@@ -15,16 +15,16 @@ inline bool is_square_attacked(const board *b, uint pos, piece_color by_color, u
 	u64 enemies = b->colors[by_color];
 
 	u64 enemy_knights = b->pieces[KNIGHT] & enemies;
-	if (enemy_knights && (get_knight_attacks(pos) & enemy_knights)) 
+	if (enemy_knights && (get_knight_attacks(pos) & enemy_knights))
 		return true;
 
 	u64 enemy_kings = b->pieces[KING] & enemies;
-	if (enemy_kings && (get_king_attacks(pos) & enemy_kings)) 
+	if (enemy_kings && (get_king_attacks(pos) & enemy_kings))
 		return true;
 
 	piece_color defending_color = (by_color == WHITE) ? BLACK : WHITE;
 	u64 enemy_pawns = b->pieces[PAWN] & enemies;
-	if (enemy_pawns && (get_pawn_attacks(pos, defending_color) & enemy_pawns)) 
+	if (enemy_pawns && (get_pawn_attacks(pos, defending_color) & enemy_pawns))
 		return true;
 
 	u64 orthogonal_sliders = (b->pieces[ROOK] | b->pieces[QUEEN]) & enemies;
