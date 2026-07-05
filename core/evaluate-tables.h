@@ -33,9 +33,9 @@ const char pst_mg[7][64] = {
 		-7,    6,   -2,  -11,    4,  -14,   10,   -9,
 		 3,  -11,   -6,   22,   -8,   -5,  -14,  -11,
 		11,   -4,  -11,    2,   21,    0,  -12,    5,
-		-3,  -20,    8,   21,   42,   17,    2,   -5,
-		-9,  -15,   11,   18,   25,   23,    6,  -20,
-		 2,    4,   11,   12,   10,   21,    9,   -3,
+		-3,  -20,    8,   21,   42,   17,    2,   -6,
+		-9,  -15,   11,   18,   25,   23,    6,  -16,
+		 2,    4,   11,   12,   10,   21,    9,    1,
 		 0,    0,    0,    0,    0,    0,    0,    0
 	},
 	{ // KNIGHT
@@ -160,4 +160,5 @@ const unsigned long FILE_MASKS[8] = {
 const char KNIGHT_ADJ[9] = {-20, -16, -12, -8, -4, 0, 4, 8, 12};
 const char ROOK_ADJ[9] = {15, 12, 9, 6, 3, 0, -3, -6, -9};
 
-const int TEMPO_BONUS = 15; // summed inside quiescence search
+const char BISHOP_PAIR_BONUS = 70;
+const char TEMPO_BONUS = 15; // summed inside quiescence search
