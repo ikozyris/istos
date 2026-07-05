@@ -28,7 +28,7 @@ uint evaluate_pawn_structure(const board &b, piece_color col)
 	uint rook_cnt = std::__popcount(b.pieces[ROOK] & b.colors[col]);
 	penalty += knight_cnt * KNIGHT_ADJ[pawn_cnt] + rook_cnt * ROOK_ADJ[pawn_cnt];
 
-	return penalty; 
+	return penalty;
 }
 
 uint evaluate_mobility(const board &b, piece_color color, u64 occ) {
