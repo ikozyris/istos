@@ -58,7 +58,7 @@ public:
 		if (nextDepth == 0 || nextDepth > maxDepth) return false;
 
 		// If no meaningful time left, stop (after we reached some usable depth)
-		if (nextDepth >= 4 && remainingMs <= safetyReserveMs + 10)
+		if (nextDepth >= 6 && remainingMs <= safetyReserveMs + 10)
 			return false;
 
 		u64 budget = budgetForCurrentMove();
@@ -74,8 +74,8 @@ public:
 			}
 		}
 
-		// stable PV at reasonable depth
-		if (lastDepth >= 14 && pvStable(0.5) && !unstable)
+		// stable PV at reasonable depth and time (for endgames)
+		if ((lastDepth >= 14 && pvStable(0.5) && !unstable) && elapsedSinceStartMs() > 300)
 			return false;
 
 		return true;
