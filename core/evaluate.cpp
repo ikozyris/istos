@@ -63,6 +63,19 @@ uint evaluate_mobility(const board &b, piece_color color, u64 occ) {
 	return mobility_bonus;
 }
 
+/*short material_imbalance(const board &b, u64 occ) {
+	short diff = 0;
+
+	uint wbishop = b.pieces[BISHOP] & WHITE;
+	uint bbishop = b.pieces[BISHOP] & BLACK;
+	if (wbishop != bbishop && (wbishop == 2 || bbishop == 2))
+		diff = (wbishop - bbishop) * BISHOP_PAIR_BONUS;
+
+	//uint wqueen = b.pieces[QUEEN] & WHITE;
+	//uint bqueen = b.pieces[QUEEN] & BLACK;
+	//if ((wqueen && bqueen) && ())
+}*/
+
 short evaluate_board(const board &b)
 {
 	short score = pst_score(&b);
@@ -74,6 +87,7 @@ short evaluate_board(const board &b)
 	score -= evaluate_pawn_structure(b, WHITE);
 	score += evaluate_pawn_structure(b, BLACK);
 
+	// king safety
 	if (b.phase > 230) { // queens still on board
 		uint w_pos = b.pieces[KING] & WHITE;
 		uint b_pos = b.pieces[KING] & BLACK;
@@ -81,5 +95,7 @@ short evaluate_board(const board &b)
 		score -= __builtin_popcountll(get_bishop_attacks(w_pos, occ)) + __builtin_popcountll(get_rook_attacks(w_pos, occ));
 		score += __builtin_popcountll(get_bishop_attacks(b_pos, occ)) + __builtin_popcountll(get_rook_attacks(b_pos, occ));
 	}
+
+	
 	return score;
 }

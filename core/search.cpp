@@ -2,7 +2,7 @@
 #include "attacks.h"
 #include "evaluate-tables.h"
 
-const uint MAX_DEPTH = 48;
+const uint MAX_DEPTH = 63;
 
 char LMR_table[MAX_DEPTH][256];
 void init_LMR() {
@@ -417,7 +417,7 @@ aspiration_retry:
 #define RESET "\x1b[0m"
 #define GRAY  "\x1b[90m"
 
-constexpr bool timing = false;
+constexpr bool timing = true;
 struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 {
 	struct move killer_moves[MAX_DEPTH][2];
@@ -442,13 +442,15 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 
 		printf("depth %u: eval: " BOLD "%d" RESET ", nodes: %lu, expf: " BOLD "%.1f" RESET, cur_depth,
 			eval, nodes, (double)nodes / (double)prev_nodes);
-		prev_nodes = nodes;
+
 		if constexpr (timing) {
 			Clock::time_point searchEnd = Clock::now();
 			Clock::duration searchDuration = searchEnd - searchStart;
-			printf(", time: %.1fms", (double)searchDuration.count() / 1e6);
+			double dur = (double)searchDuration.count() / 1e6;
+			printf(", time: %.1fms, NPS: %.1f", dur, nodes/(dur*1e3));
 		}
 		putc('\n', stdout);
+		prev_nodes = nodes;
 
 		struct board tmp_b = b;
 		make_move(&tmp_b, best_move);
