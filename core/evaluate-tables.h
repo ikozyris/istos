@@ -5,17 +5,17 @@
 // centipawns
 const short PIECE_WEIGHTS_MG[7] = {
 	0,	// EMPTY
-	13000,	// KING
-	66,	// PAWN
+	12000,	// KING
+	66,	// PAWN (discourage sacrifices or taking pawns in the opening)
 	409,	// KNIGHT
 	432,	// BISHOP
 	666,	// ROOK
-	1326	// QUEEN	
+	1326	// QUEEN
 };
 
 const short PIECE_WEIGHTS_EG[7] = {
 	0,	// EMPTY
-	13000,	// KING
+	12000,	// KING
 	100,	// PAWN
 	410,	// KNIGHT
 	439,	// BISHOP

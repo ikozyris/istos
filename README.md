@@ -6,7 +6,7 @@ a separate [engine-uci-interface](https://git.svlachos.duckdns.org/spiros/engine
 
 The engine is licensed under the GNU GPL v3.
 
-Version 0.7
+Version 0.7.5
 
 ## Architecture
 
@@ -52,27 +52,5 @@ PSTs were adapted from Stockfish's legacy HCE evaluation.
 
 ## Performance Characteristics
 
-Search throughput: more than 8 million legal moves simulated per second (single thread).
-
-From starting position:
-| depth | time | nodes       | exp factor | NPS |
-|-------|------|-------------|------------|-----|
-| 11	| 0.08 |     637,780 | 1.91	  | 8.15 |
-| 12	| 0.15 |   1,181,691 | 1.85	  | 8.18 |
-| 13	| 0.23 |   1,820,807 | 1.54	  | 8.17 |
-| 14	| 0.45 |   3,629,571 | 1.99	  | 8.15 |
-| 15	| 0.73 |   5,860,492 | 1.62	  | 8.13 |
-| 16	| 1.21 |   9,746,154 | 1.66	  | 8.13 |
-| 17	| 2.26 |  18,134,817 | 1.86	  | 8.12 |
-| 18	| 4.51 |  36,316,828 | 2.00	  | 8.14 |
-| 19	| 6.67 |  53,408,528 | 1.47	  | 8.11 |
-| 20	| 10.60 |  85,070,958 | 1.59	  | 8.13 |
-| 21	| 21.82 | 174,437,361 | 2.05	  | 8.11 |
-| 22	| 31.94 | 256,067,677 | 1.47	  | 8.13 |
-| 23	| 91.75 | 731,325,439 | 2.86	  | 8.11 |
-| 24	| 135.02 | 1,077,128,525 | 1.47	  | 8.11 |
-| 25	| 197.96 | 1,578,679,666 | 1.47	  | 8.11 |
-| 26	| 349.11 | 2,787,792,198 | 1.77	  | 8.12 |
-| 27	| 534.96 | 4,288,702,476 | 1.54	  | 8.13 |
-
-These benchmarks are old and the engine is currently 15% faster (8.8 MN/s and 3% fewer nodes).
+Search throughput: 9 million legal moves simulated per second (single thread).
+Branching factor: 1.5x to 1.7x (more nodes per ply searched)
