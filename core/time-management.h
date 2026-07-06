@@ -63,19 +63,21 @@ public:
 
 		u64 budget = budgetForCurrentMove();
 		u64 projected = projectedNextDepthCost(nextDepth);
-		bool unstable = evalStable(35);
+		short eval_dev = evalDeviation();
+		double pv_stability = pvStability();
+		bool stable = (eval_dev < 25) && (pv_stability > 0.5);
 
 		// predicted next iteration would go into reserve
 		if (projected + safetyReserveMs > budget) {
-			if (unstable && remainingMs > projected + (safetyReserveMs / 2)) {
+			if (!stable && remainingMs > projected + (safetyReserveMs / 2)) {
 				// allow going into half of reserve for unstable positions
 			} else {
 				return false;
 			}
 		}
 
-		// stable PV at reasonable depth and time (for endgames)
-		if ((lastDepth >= 14 && pvStable(0.5) && !unstable) && elapsedSinceStartMs() > 300)
+		// stable PV at reasonable depth and time (for endgames where depth increases very fast)
+		if ((lastDepth >= 14 && stable) && elapsedSinceStartMs() > 300)
 			return false;
 
 		return true;
@@ -149,14 +151,14 @@ private:
 		if (a == 0 || b == 0) return 2.0;
 
 		double r = double(b) / double(a);
-		r += 0.2; // better safe than sorry
+		r += 0.1; // better safe than sorry
 		if (r < 1.1) r = 1.1;
-		if (r > 3.5) r *= 1.5; // super-exponential at very high depths
+		if (r > 6) r = 6;
 
 		return r;
 	}
 
-	bool pvStable(double thresholdFraction) const {
+	double pvStability() const {
 		if (lastDepth < 2)
 			return false;
 
@@ -181,15 +183,14 @@ private:
 		if (denom == 0)
 			return false;
 
-		double frac = double(matches) / double(denom);
-		return frac >= thresholdFraction;
+		return double(matches) / double(denom);
 	}
 
-	bool evalStable(short margin) const {
+	short evalDeviation() const {
 		if (lastDepth < 2) return false;
 		short prev = records[lastDepth - 1].eval;
 		short curr = records[lastDepth].eval;
 		short diff = prev > curr ? prev - curr : curr - prev;
-		return diff > margin;
+		return diff;
 	}
 };
