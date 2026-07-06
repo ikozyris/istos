@@ -35,7 +35,7 @@ short score_move(const board *b, struct move m, struct move hash_move, const str
 	// capture
 	if (victim != EMPTY) {
 		// prioritize taking valuable victim using weak attacker (MVV/LVA)
-		short score = 20000 + (PIECE_WEIGHTS[victim] * 10) - PIECE_WEIGHTS[attacker];
+		short score = 20000 + (PIECE_WEIGHTS_MG[victim] * 10) - PIECE_WEIGHTS_MG[attacker];
 
 		// recapture last moved piece
 		// if (m.to == last_target_sq)
@@ -57,7 +57,7 @@ short score_move(const board *b, struct move m, struct move hash_move, const str
 
 	uint from_sq = turn == WHITE ? m.from : m.from ^ 56;
 	uint to_sq   = turn == WHITE ? m.to   : m.to ^ 56;
-	short pst_delta = pst_mg[attacker][to_sq] - pst_mg[attacker][from_sq]; // for endgame history is more important
+	short pst_delta = PST_MG[attacker][to_sq] - PST_MG[attacker][from_sq]; // for endgame, history is more important
 	return pst_delta + history[attacker][m.to]; // default for quiet moves
 }
 
@@ -130,7 +130,7 @@ short quiescence(const board &b, short alpha, short beta) {
 		pick_best_move(moves, scores, i, move_cnt);
 		struct move m = moves[i];
 
-		if (stand_pat + PIECE_WEIGHTS[b.piece(m.to)] + 200 < alpha)
+		if (stand_pat + PIECE_WEIGHTS_MG[b.piece(m.to)] + 200 < alpha)
 			continue;
 
 		board b2 = b;

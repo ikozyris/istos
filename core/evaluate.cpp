@@ -81,17 +81,18 @@ short evaluate_board(const board &b)
 	short score = pst_score(&b);
 	u64 occ = b.colors[WHITE] | b.colors[BLACK];
 
-	score += evaluate_mobility(b, WHITE, occ);
+	score += evaluate_mobility(b, WHITE, occ); // bonus
 	score -= evaluate_mobility(b, BLACK, occ);
 
-	score -= evaluate_pawn_structure(b, WHITE);
+	score -= evaluate_pawn_structure(b, WHITE); // penalty
 	score += evaluate_pawn_structure(b, BLACK);
 
+	const uint safety_threshold = (PIECE_WEIGHTS_MG[KING] + PIECE_WEIGHTS_MG[QUEEN] + PIECE_WEIGHTS_MG[KNIGHT]) / 64;
 	// king safety
-	if (b.phase > 230) { // queens still on board
+	if (b.phase > safety_threshold) { // queens still on board
 		uint w_pos = b.pieces[KING] & WHITE;
 		uint b_pos = b.pieces[KING] & BLACK;
-		// subtract a point for each square a queen could move if it were on king (cheap check)
+		// subtract a point for each square a queen could move if it were on king, TODO: near semi-open files
 		score -= __builtin_popcountll(get_bishop_attacks(w_pos, occ)) + __builtin_popcountll(get_rook_attacks(w_pos, occ));
 		score += __builtin_popcountll(get_bishop_attacks(b_pos, occ)) + __builtin_popcountll(get_rook_attacks(b_pos, occ));
 	}

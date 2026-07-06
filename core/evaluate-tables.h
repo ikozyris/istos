@@ -1,14 +1,26 @@
 #pragma once
 
+// values copied and adjusted from stockfish
+
 // centipawns
-const short PIECE_WEIGHTS[7] = {
+const short PIECE_WEIGHTS_MG[7] = {
 	0,	// EMPTY
-	13500,	// KING
+	13000,	// KING
+	66,	// PAWN
+	409,	// KNIGHT
+	432,	// BISHOP
+	666,	// ROOK
+	1326	// QUEEN	
+};
+
+const short PIECE_WEIGHTS_EG[7] = {
+	0,	// EMPTY
+	13000,	// KING
 	100,	// PAWN
-	320,	// KNIGHT
-	330,	// BISHOP
-	500,	// ROOK
-	900	// QUEEN
+	410,	// KNIGHT
+	439,	// BISHOP
+	663,	// ROOK
+	1289	// QUEEN
 };
 
 const char KNIGHT_MOBILITY_FACTOR = 7;
@@ -16,7 +28,7 @@ const char BISHOP_MOBILITY_FACTOR = 5;
 const char ROOK_MOBILITY_FACTOR = 5;
 
 // PST tables, top left is a8, from white's perspective
-const char pst_mg[7][64] = {
+const char PST_MG[7][64] = {
 	{}, // EMPTY
 	{ // KING (clamped to char and then mul by 2/3)
 		-43,  -28,  -50,  -71,  -71,  -50,  -28,  -43,
@@ -80,7 +92,7 @@ const char pst_mg[7][64] = {
 	}
 };
 
-const char pst_eg[7][64] = {
+const char PST_EG[7][64] = {
 	{},
 	{ // KING
 		-77,  -42,  -32,  -28,  -28,  -32,  -42,  -77,
