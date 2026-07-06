@@ -66,7 +66,7 @@ public:
 		u64 projected = projectedNextDepthCost(nextDepth);
 		short eval_dev = evalDeviation();
 		double pv_stability = pvStability();
-		bool stable = (eval_dev <= 20) && (pv_stability > 0.55);
+		bool stable = (eval_dev <= 20) && (pv_stability > 0.4);
 
 		// predicted next iteration would go into reserve
 		if (projected + safetyReserveMs > budget) {
@@ -171,8 +171,9 @@ private:
 		uint matches = 0;
 		uint denom = 0;
 
+		uint downto = std::max((int)lastDepth - 4, 3); // shallow moves don't matter
 		// ignore first move
-		for (uint d = 2; d <= lastDepth; ++d) {
+		for (uint d = lastDepth; d >= downto; --d) {
 			const move pv = records[d].pv;
 			if (pv.from == 0 && pv.to == 0)
 				continue;
@@ -182,7 +183,7 @@ private:
 		}
 
 		if (denom == 0)
-			return false;
+			return 1;
 
 		return double(matches) / double(denom);
 	}
