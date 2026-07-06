@@ -56,6 +56,7 @@ public:
 	// Decide whether to continue to nextDepth
 	bool shouldContinue(uint nextDepth) const {
 		if (nextDepth == 0 || nextDepth > maxDepth) return false;
+		if (nextDepth <= 4) return true;
 
 		// If no meaningful time left, stop (after we reached some usable depth)
 		if (nextDepth >= 6 && remainingMs <= safetyReserveMs + 10)
