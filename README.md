@@ -24,6 +24,7 @@ For quiet move pruning:
  - Null Move Pruning (dynamic depth reduction)
  - Late Move Reductions
  - PVS (null window search)
+ - (Reverse) Futility Pruning
 
 At the start of each call alpha-beta it tries to retrieve the evaluation from the transposition table, saves evaluation at end of function.
 
@@ -52,5 +53,5 @@ PSTs were adapted from Stockfish's legacy HCE evaluation.
 
 ## Performance Characteristics
 
-Search throughput: 9 million legal moves simulated per second (single thread).
-Branching factor: 1.5x to 1.7x (more nodes per ply searched)
+Search throughput: 8 million legal moves simulated per second (single thread).
+Branching factor: 1.5x to 2.5x (more nodes per ply searched)

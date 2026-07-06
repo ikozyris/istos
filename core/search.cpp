@@ -168,10 +168,19 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 	u64 white, black;
 	get_occupancy(&white, &black, &b);
 
+	u64 occ = white | black;
+	bool checked = is_in_check(&b, Turn, occ);
+
+	short stand_eval = evaluate_board(b);
+	if (depth <= 3 && !checked) { // reverse futility pruning
+		short margin = 120 * depth;
+		if (stand_eval - margin >= beta)
+			return stand_eval;
+	}
+
 	// Null Move Pruning
 	if constexpr (AllowNull) {
-		u64 occ = white | black;
-		if (depth >= 3 && !is_in_check(&b, Turn, occ)) {
+		if (depth >= 3 && !checked) {
 			board null_b = b;
 			null_b.hash_key ^= zobrist_turn;
 			if (null_b.en_passant_sq != NO_EP) {
@@ -216,6 +225,12 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 	for (uint i = 0; i < move_count; ++i) {
 		// lazy selection sort: find only the single best move left
 		pick_best_move(pseudo_moves, scores, i, move_count);
+
+		if (depth <= 2 && scores[i] < 9000) { // futility pruning
+			short margin = (depth == 1) ? 300 : 500;
+			if (stand_eval + margin <= alpha)
+				continue;
+		}
 
 		// avoid checking validity for every move
 		if (!is_valid_move(pseudo_moves[i], b, Turn))
