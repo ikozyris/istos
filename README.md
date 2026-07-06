@@ -6,7 +6,7 @@ a separate [engine-uci-interface](https://git.svlachos.duckdns.org/spiros/engine
 
 The engine is licensed under the GNU GPL v3.
 
-Version 0.7.5
+Version 0.7.9
 
 ## Architecture
 
