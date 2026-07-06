@@ -65,7 +65,7 @@ public:
 		u64 projected = projectedNextDepthCost(nextDepth);
 		short eval_dev = evalDeviation();
 		double pv_stability = pvStability();
-		bool stable = (eval_dev < 15) && (pv_stability > 0.7);
+		bool stable = (eval_dev <= 20) && (pv_stability > 0.55);
 
 		// predicted next iteration would go into reserve
 		if (projected + safetyReserveMs > budget) {
@@ -151,7 +151,7 @@ private:
 		if (a == 0 || b == 0) return 2.0;
 
 		double r = double(b) / double(a);
-		r += 0.1; // better safe than sorry
+		r += 0.2; // better safe than sorry
 		if (r < 1.1) r = 1.1;
 		if (r > 6) r = 6;
 
