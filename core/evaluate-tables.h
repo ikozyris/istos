@@ -30,7 +30,7 @@ const char ROOK_MOBILITY_FACTOR = 4;
 // PST tables, top left is a8, from white's perspective
 const char PST_MG[7][64] = {
 	{}, // EMPTY
-	{ // KING (clamped to char and then mul by 2/3)
+	{ // KING
 		-43,  -28,  -50,  -71,  -71,  -50,  -28,  -43,
 		-29,  -14,  -40,  -55,  -55,  -40,  -14,  -29,
 		-12,   -2,  -32,  -56,  -56,  -32,   -2,  -12,
