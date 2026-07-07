@@ -99,6 +99,10 @@ uint generate_and_score_moves(const board *b, struct move *moves, short *scores,
 	return move_count;
 }
 
+const struct move dummy_killers[2] = {{64,64}, {64,64}};
+struct move dummy_hash_move = {64, 64};
+const short dummy_history[7][64] = {};
+
 template <piece_color Turn>
 short quiescence(const board &b, short alpha, short beta) {
 	short stand_pat = evaluate_board(b); // current evaluation if we don't do any captures
@@ -118,13 +122,7 @@ short quiescence(const board &b, short alpha, short beta) {
 	get_occupancy(&white, &black, &b);
 	struct move moves[40];
 	short scores[40];
-	uint move_cnt;
-{
-	const struct move dummy_killers[2] = {{64,64}, {64,64}};
-	struct move dummy_hash_move = {64, 64};
-	const short dummy_history[7][64] = {};
-	move_cnt = generate_and_score_moves<Turn, true, true>(&b, moves, scores, white, black, dummy_hash_move, dummy_killers, dummy_history);
-} // don't waste stack space
+	uint move_cnt = generate_and_score_moves<Turn, true, true>(&b, moves, scores, white, black, dummy_hash_move, dummy_killers, dummy_history);
 
 	for (uint i = 0; i < move_cnt; ++i) {	// captures only
 		pick_best_move(moves, scores, i, move_cnt);
