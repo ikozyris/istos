@@ -295,11 +295,11 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 		}
 
 		if (beta <= alpha) {
-			if (b.piece(pseudo_moves[i].to) == EMPTY) { // quiet but important moves
-				if (killer_moves[ply][0].from == 64)
+			if (scores[i] < 9000) { // quiet but important moves
+				if (*(u16*)&pseudo_moves[i] != *(u16*)&killer_moves[ply][0]) { // no duplicates
+					killer_moves[ply][1] = killer_moves[ply][0];
 					killer_moves[ply][0] = pseudo_moves[i];
-				else
-					killer_moves[ply][1] = pseudo_moves[i];
+				}
 
 				// update history heuristic
 				piece_type pt = b.piece(pseudo_moves[i].from);

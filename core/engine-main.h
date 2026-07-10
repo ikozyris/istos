@@ -32,7 +32,7 @@ struct tt_entry {
 	// 12 move (TODO: promotions will be handled by moving to invalid squares)
 	// 6 depth (we don't really care about depth 64+)
 	// 2 bound type
-	// 16 eval (could be less but we are just fine with 28 bits key)
+	// 16 eval (could be less but we are just fine with 28+21 bits key)
 
 	inline u32 get_key() const { return all & 0x0FFFFFFFU; }
 	inline move get_move() const {
@@ -60,7 +60,7 @@ struct tt_entry {
 const uint TT_BUCKETS = 2097152;
 const uint TT_BUCKET_SIZE = 8;
 extern tt_entry *TT;
-const short TT_MAGIC_FAIL_EVAL = 32000;
+const short TT_MAGIC_FAIL_EVAL = 32767;
 
 extern void init_zobrist();
 extern u64 compute_hash(const struct board &b);
