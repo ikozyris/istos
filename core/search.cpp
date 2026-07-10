@@ -252,7 +252,7 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 			else
 				eval = alpha_beta<NextTurn>(next_b, r_depth, beta - 1, beta, ply + 1, killer_moves, history);
 
-			// re-search at full depth if reduced search improved
+			// re-search at full depth if reduced search improved (this is likely a good move)
 			bool needs_re_search;
 			if constexpr (Turn == WHITE)
 				needs_re_search = (eval > alpha);
@@ -272,9 +272,9 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 
 			bool needs_re_search;
 			if constexpr (Turn == WHITE)
-				needs_re_search = (eval > alpha);
+				needs_re_search = (eval > alpha && eval < beta);
 			else
-				needs_re_search = (eval < beta);
+				needs_re_search = (eval < beta && eval > alpha);
 
 			if (needs_re_search)
 				eval = alpha_beta<NextTurn>(next_b, depth - 1, alpha, beta, ply + 1, killer_moves, history);
