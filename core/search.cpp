@@ -103,16 +103,14 @@ const short dummy_history[7][64] = {};
 short quiescence(const board &b, short alpha, short beta, piece_color turn) {
 	short stand_pat = evaluate_board(b); // current evaluation if we don't do any captures
 
-	if (turn == BLACK) {
+	if (turn == BLACK)
 		stand_pat = -stand_pat;
-	}
 	stand_pat += TEMPO_BONUS;
 
 	if (stand_pat >= beta)
 		return beta;
 	if (stand_pat > alpha)
 		alpha = stand_pat;
-
 
 	u64 white, black;
 	get_occupancy(&white, &black, &b);
