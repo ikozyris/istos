@@ -147,7 +147,7 @@ extern u64 get_piece_pseudo_moves(const board *b, uint pos, u64 white, u64 black
 extern void make_move(struct board *b, const struct move m);
 
 const short INF = 30000;
-const short MATE_ABS_THRESHOLD = INF - 900 - 20 * 20; 
+const short MATE_ABS_THRESHOLD = INF - 31 * 31; 
 short evaluate_board(const board &b);
 
 // for UCI interface

@@ -59,4 +59,4 @@ PSTs were adapted from Stockfish's legacy HCE evaluation.
 ## Performance Characteristics
 
 Search throughput: 7 million legal moves simulated per second (single thread).
-Branching factor: 1.4x to 2.5x (more nodes per ply searched)
+Branching factor: 1.3x to 2.5x (more nodes per ply searched)
