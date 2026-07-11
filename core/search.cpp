@@ -61,9 +61,6 @@ short score_move(const board *b, struct move m, struct move hash_move, const str
 	return pst_delta + history[attacker][m.to]; // default for quiet moves
 }
 
-const short INF = 30000;
-short evaluate_board(const board &b);
-
 template <bool FullyLegal, bool OnlyCaptures>
 uint generate_and_score_moves(const board *b, struct move *moves, short *scores, u64 white, u64 black, struct move hash_move, const struct move *killer_moves, const short history[7][64], piece_color turn)
 {
@@ -360,7 +357,7 @@ aspiration_retry:
 
 	// aspiration window failed; redo search
 	if (cur_depth > 3 && (best_eval <= eval_turn - aspiration_delta || best_eval >= eval_turn + aspiration_delta)) {
-		if (best_eval > INF - 900 || best_eval < -INF + 900) { // skip aspiration entirely for mates
+		if (best_eval > MATE_ABS_THRESHOLD || best_eval < -MATE_ABS_THRESHOLD) { // skip aspiration entirely for mates
 			alpha = -INF;
 			beta  =  INF;
 		} else {

@@ -146,6 +146,10 @@ extern bool is_valid_move(const struct move m, const struct board &b, piece_colo
 extern u64 get_piece_pseudo_moves(const board *b, uint pos, u64 white, u64 black);
 extern void make_move(struct board *b, const struct move m);
 
+const short INF = 30000;
+const short MATE_ABS_THRESHOLD = INF - 900 - 20 * 20; 
+short evaluate_board(const board &b);
+
 // for UCI interface
 extern void engine_init();
 extern void tt_clear();
@@ -155,8 +159,10 @@ extern void search_init(struct board& b, piece_color turn, struct move root_move
 
 extern void search_loop(uint cur_depth, piece_color turn, struct move root_moves[224], struct move killer_moves[32][2], short history[2][7][64],
 			short scores[224], uint move_count, const struct board &b, short &eval, struct move &best_move_cur);
+
 // for local tests
 extern struct move get_best_move(struct board b, uint target_depth, piece_color turn);
+
 
 inline short pst_score(const struct board *b) {
 	int phase = b->phase - 202; // kings alone sum 202
