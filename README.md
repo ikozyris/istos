@@ -12,7 +12,7 @@ Version 0.8
 
 ### Search
 
-Searching using iterative deepening over alpha-beta minimax algorithm.
+Searching using iterative deepening over alpha-beta negamax algorithm.
 Sorts legal move with lazy selection sort and scores them using as heuristics:
  - last PV move
  - 2 killer moves from sibling branches on same ply
@@ -28,7 +28,7 @@ For quiet move pruning:
 
 At the start of each call alpha-beta it tries to retrieve the evaluation from the transposition table, saves evaluation at end of function.
 
-When depth reaches 0, alpha-beta calls quiescence negamax search to search for captures, which reduces the Horizon Effect.
+When depth reaches 0, alpha-beta calls quiescence search to search for captures, which reduces the Horizon Effect.
 
 ### Attack Generation
 
@@ -59,4 +59,4 @@ PSTs were adapted from Stockfish's legacy HCE evaluation.
 ## Performance Characteristics
 
 Search throughput: 7 million legal moves simulated per second (single thread).
-Branching factor: 1.5x to 2.5x (more nodes per ply searched)
+Branching factor: 1.4x to 2.5x (more nodes per ply searched)
