@@ -1,7 +1,7 @@
 # Chess Engine
 Code in core/
 
-In this repo there are only test programs for the engine, a standard UCI interface is avaiable on 
+In this repo there are only test programs for the engine, a standard UCI interface is available on 
 a separate [engine-uci-interface](https://git.svlachos.duckdns.org/spiros/engine-uci-interface) repo.
 
 The engine is licensed under the GNU GPL v3.
@@ -39,8 +39,8 @@ Utilizes PEXT instructions and lookup tables for rook, bishop and knight. Used f
 High density lock-less Transposition table:
  - 8 byte entry, 8 entries per cluster (fits in cache line)
  - Effectively 49-bit key for 2M clusters:
-   - high 28 bits of 64-bit zobrist key
-   - low 21 bits for indexing low 
+   - high 28 bits of 64-bit zobrist key written on entry
+   - low 21 bits used for indexing (depends on entries allocated)
  - Atomic read/write operations
  - Depth-based replacement
 
@@ -58,5 +58,5 @@ PSTs were adapted from Stockfish's legacy HCE evaluation.
 
 ## Performance Characteristics
 
-Search throughput: 7 million legal moves simulated per second (single thread).
+Search throughput: 7.5 million legal moves simulated per second (single thread).
 Branching factor: 1.3x to 2.5x (more nodes per ply searched)
