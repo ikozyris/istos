@@ -300,7 +300,16 @@ void engine_init() {
 	init_zobrist();
 	init_LMR();
 	init_attacks();
-	TT = (tt_entry*)aligned_alloc(64, TT_BUCKETS * TT_BUCKET_SIZE * sizeof(tt_entry));
+
+	tt_entry *tmp_tt = (tt_entry*)mmap(NULL, TT_BUCKETS * TT_BUCKET_SIZE * sizeof(tt_entry),
+		PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB | MAP_HUGE_2MB, -1, 0);
+	if (tmp_tt == MAP_FAILED) {
+#ifdef LOG
+		printf(RED "Failed to alloc %u KiB with mmap\n" RESET, TT_BUCKETS * TT_BUCKET_SIZE * sizeof(tt_entry) / 1024);
+#endif
+		TT = (tt_entry*)aligned_alloc(64, TT_BUCKETS * TT_BUCKET_SIZE * sizeof(tt_entry));
+	} else
+		TT = tmp_tt;
 	tt_clear();
 }
 
@@ -330,6 +339,9 @@ void search_loop(uint cur_depth, piece_color turn, struct move root_moves[224], 
 {
 	short eval_turn = (turn == WHITE) ? eval : -eval;
 	short aspiration_delta = 25;
+	if (cur_depth <= 6)
+		aspiration_delta = 100;
+
 aspiration_retry:
 	// aspiration window: use narrow window around previous eval
 	short alpha = (cur_depth > 3) ? eval_turn - aspiration_delta : -INF;
@@ -356,14 +368,14 @@ aspiration_retry:
 	}
 
 	// aspiration window failed; redo search
-	if (cur_depth > 3 && (best_eval <= eval_turn - aspiration_delta || best_eval >= eval_turn + aspiration_delta)) {
+	if (best_eval <= eval_turn - aspiration_delta || best_eval >= eval_turn + aspiration_delta) {
 		if (best_eval > MATE_ABS_THRESHOLD || best_eval < -MATE_ABS_THRESHOLD) { // skip aspiration entirely for mates
 			alpha = -INF;
 			beta  =  INF;
 		} else {
 			aspiration_delta *= 2;
 #ifdef LOG
-			printf("aspr_wnd retry: %d vs %d, a: %d b: %d\n", best_eval, eval_turn, alpha, beta);
+			printf(RED "aspr_wnd retry: %d vs %d, a: %d b: %d\n" RESET, best_eval, eval_turn, alpha, beta);
 #endif
 			goto aspiration_retry;
 		}
@@ -371,10 +383,6 @@ aspiration_retry:
 
 	eval = (turn == WHITE) ? best_eval : -best_eval;
 }
-
-#define BOLD  "\x1b[1m"
-#define RESET "\x1b[0m"
-#define GRAY  "\x1b[90m"
 
 constexpr bool timing = true;
 struct move get_best_move(struct board b, uint target_depth, piece_color turn)
@@ -413,7 +421,7 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 
 		struct board tmp_b = b;
 		make_move(&tmp_b, best_move);
-		const uint lines = 10;
+		const uint lines = 4;
 		struct move cur_pv[lines];
 		cur_pv[0] = best_move;
 		uint pv_cnt = extract_pv(tmp_b, std::min(cur_depth, lines-1), cur_pv + 1);

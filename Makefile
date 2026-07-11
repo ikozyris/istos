@@ -1,5 +1,5 @@
 CXX = g++ --std=c++20
-CXXFLAGS = -O3 -flto -march=native -g
+CXXFLAGS = -O3 -flto -march=native -g -DLOG
 
 TARGET = engine-perf
 
