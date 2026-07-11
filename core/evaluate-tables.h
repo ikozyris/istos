@@ -168,6 +168,27 @@ const unsigned long FILE_MASKS[8] = {
 	0x4040404040404040ul,
 	0x8080808080808080ul
 };
+const char KING_ON_FILE_PENALTY = 40;
+const unsigned long KING_SAFETY_RANK_MASK[8] = {
+    0x00FFFFFFFFFFFFFFul, // 0-5
+    0xFFFFFFFFFFFFFFul,   // 0-6
+    0xFFFFFFFFFFFFFFFFul, // 0-7
+    0xFFFFFFFFFFFFFFFFul, // 0-7
+    0xFFFFFFFFFFFFFFFFul, // 0-7
+    0xFFFFFFFFFFFFFFFFul, // 0-7
+    0xFFFFFFFFFFFFFF00ul, // 1-7
+    0xFFFFFFFFFFFF0000ul  // 2-7
+};
+const unsigned char KING_PROXIMITY_PENALTY[7][6] = {
+    {0,   0,  0,  0,  0,  0}, // EMPTY
+    {0,   0,  0,  0,  0,  0}, // PAWN (Handled separately via shield/semi-open logic)
+    {30, 20, 10,  5,  0,  0}, // KNIGHT
+    {35, 25, 15,  5,  0,  0}, // BISHOP
+    {60, 45, 30, 15, 10,  5}, // ROOK
+    {90, 75, 50, 30, 15, 10}, // QUEEN
+    {0,   0,  0,  0,  0,  0}  // KING
+};
+const unsigned char KING_VULNR_PENALTY = 15;
 
 const char KNIGHT_ADJ[9] = {-20, -16, -12, -8, -4, 0, 4, 8, 12};
 const char ROOK_ADJ[9] = {15, 12, 9, 6, 3, 0, -3, -6, -9};
