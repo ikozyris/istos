@@ -170,8 +170,8 @@ const unsigned long FILE_MASKS[8] = {
 };
 const char KING_ON_FILE_PENALTY = 40;
 const unsigned long KING_SAFETY_RANK_MASK[8] = {
-    0x00FFFFFFFFFFFFFFul, // 0-5
-    0xFFFFFFFFFFFFFFul,   // 0-6
+    0x0000FFFFFFFFFFFFul, // 0-5
+    0x00FFFFFFFFFFFFFFul, // 0-6
     0xFFFFFFFFFFFFFFFFul, // 0-7
     0xFFFFFFFFFFFFFFFFul, // 0-7
     0xFFFFFFFFFFFFFFFFul, // 0-7

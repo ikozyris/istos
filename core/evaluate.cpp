@@ -2,31 +2,24 @@
 #include "engine-main.h"
 #include "attacks.h"
 
-uint evaluate_pawn_structure(const board &b, piece_color color)
+uint evaluate_pawn_structure(const board &b, u64 my_pawns)
 {
 	uint penalty = 0;
-	u64 my_pawns = b.pieces[PAWN] & b.colors[color];
-
 	u8 pawn_files = 0;
 	for (uint file = 0; file < 8; ++file) {
 		u64 pawns_on_file = my_pawns & FILE_MASKS[file];
 		uint pawn_cnt = std::__popcount(pawns_on_file);
 
-		if (pawn_cnt > 1) { // penalty for doubled pawns
-			penalty += (pawn_cnt - 1) * DOUBLED_PAWN_PENALTY;
+		if (pawn_cnt > 0)
 			pawn_files |= 1u << file;
-		}
+
+		if (pawn_cnt > 1) // penalty for doubled pawns
+			penalty += (pawn_cnt - 1) * DOUBLED_PAWN_PENALTY;
 	}
 
 	// count pawn islands
 	uint island_cnt = std::__popcount((unsigned)(pawn_files & ~(pawn_files << 1u) & ~(pawn_files >> 1u)));
 	penalty += island_cnt * PAWN_ISLANDS_PENALTY;
-
-	uint pawn_cnt = std::__popcount(my_pawns);
-	// knights are valuable with many pawns, rooks with little pawns
-	uint knight_cnt = std::__popcount(b.pieces[KNIGHT] & b.colors[color]);
-	uint rook_cnt = std::__popcount(b.pieces[ROOK] & b.colors[color]);
-	penalty += knight_cnt * KNIGHT_ADJ[pawn_cnt] + rook_cnt * ROOK_ADJ[pawn_cnt];
 
 	return penalty;
 }
@@ -109,6 +102,16 @@ uint king_safety(const board &b, piece_color color)
 	return penalty;
 }
 
+short material_adj(const board &b, u64 my_pawns, piece_color color)
+{
+	uint pawn_cnt = std::__popcount(my_pawns);
+	// knights are valuable with many pawns, rooks with little pawns
+	int knight_cnt = std::__popcount(b.pieces[KNIGHT] & b.colors[color]);
+	int rook_cnt = std::__popcount(b.pieces[ROOK] & b.colors[color]);
+
+	return knight_cnt * KNIGHT_ADJ[pawn_cnt] + rook_cnt * ROOK_ADJ[pawn_cnt];
+}
+
 short evaluate_board(const board &b)
 {
 	short score = pst_score(&b);
@@ -120,8 +123,13 @@ short evaluate_board(const board &b)
 	score += evaluate_mobility(b, WHITE, occ, black_king_ring); // bonus
 	score -= evaluate_mobility(b, BLACK, occ, white_king_ring);
 
-	score -= evaluate_pawn_structure(b, WHITE); // penalty
-	score += evaluate_pawn_structure(b, BLACK);
+	u64 white_pawns = b.pieces[PAWN] & b.colors[WHITE];
+	score += material_adj(b, white_pawns, WHITE); // bonus or penalty
+	score -= evaluate_pawn_structure(b, white_pawns); // penalty
+
+	u64 black_pawns = b.pieces[PAWN] & b.colors[BLACK];
+	score -= material_adj(b, black_pawns, BLACK);
+	score += evaluate_pawn_structure(b, black_pawns);
 
 	const uint safety_threshold = (PIECE_WEIGHTS_MG[KING] + PIECE_WEIGHTS_MG[QUEEN] + PIECE_WEIGHTS_MG[KNIGHT]) / 64;
 	// king safety
@@ -129,6 +137,8 @@ short evaluate_board(const board &b)
 		score -= king_safety(b, WHITE);
 		score += king_safety(b, BLACK);
 	}
+
+
 
 	return score;
 }
