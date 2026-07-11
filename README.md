@@ -38,17 +38,22 @@ Utilizes PEXT instructions and lookup tables for rook, bishop and knight. Used f
 
 High density lock-less Transposition table:
  - 8 byte entry, 8 entries per cluster (fits in cache line)
- - effectively 49-bit key for 2M clusters:
+ - Effectively 49-bit key for 2M clusters:
    - high 28 bits of 64-bit zobrist key
    - low 21 bits for indexing low 
- - atomic read/write operations
- - depth-based replacement
+ - Atomic read/write operations
+ - Depth-based replacement
 
 Bitboard for white and black pieces + mailbox for fast piece lookups.
 
 ### Evaluation
 
-Incremental evaluation for piece values and PST with middlegame/endgame interpolation. Then on the whole board mobility and pawn structures.
+Incremental evaluation for piece values and PST with middlegame/endgame interpolation.
+Then on the whole board:
+ - Mobility (extra bonus for attacking enemy king)
+ - Pawn Structure (doubled pawns, pawn islands)
+ - King Safety (semi-open files, heavy piece proximity)
+
 PSTs were adapted from Stockfish's legacy HCE evaluation.
 
 ## Performance Characteristics

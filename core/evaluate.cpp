@@ -93,7 +93,7 @@ uint king_safety(const board &b, piece_color color)
 
 		enemy_pieces &= KING_SAFETY_RANK_MASK[king_rank];
 
-		while (enemy_pieces) {
+		while (enemy_pieces) { // proximity and material based penalty
 			uint sq = __builtin_ctzll(enemy_pieces);
 			uint enemy_rank = sq / 8;
 		

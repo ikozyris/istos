@@ -181,7 +181,7 @@ const unsigned long KING_SAFETY_RANK_MASK[8] = {
 };
 const unsigned char KING_PROXIMITY_PENALTY[7][6] = {
     {0,   0,  0,  0,  0,  0}, // EMPTY
-    {0,   0,  0,  0,  0,  0}, // PAWN (Handled separately via shield/semi-open logic)
+    {0,   0,  0,  0,  0,  0}, // PAWN
     {30, 20, 10,  5,  0,  0}, // KNIGHT
     {35, 25, 15,  5,  0,  0}, // BISHOP
     {60, 45, 30, 15, 10,  5}, // ROOK
