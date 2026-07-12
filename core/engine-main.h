@@ -28,7 +28,7 @@ enum tt_flag : u8 {
 
 struct tt_entry {
 	u64 all;
-	// 28 key (effectively += log2(TT_BUCKETS) = 49-bits)
+	// 28 key (effectively += log2(TT_BUCKETS) = 46-bits)
 	// 12 move (TODO: promotions will be handled by moving to invalid squares)
 	// 6 depth (we don't really care about depth 64+)
 	// 2 bound type

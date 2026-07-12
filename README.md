@@ -38,9 +38,9 @@ Utilizes PEXT instructions and lookup tables for rook, bishop and knight. Used f
 
 High density lock-less Transposition table:
  - 8 byte entry, 8 entries per cluster (fits in cache line)
- - Effectively 49-bit key for 2M clusters:
+ - Effectively 46-bit key for 260K clusters:
    - high 28 bits of 64-bit zobrist key written on entry
-   - low 21 bits used for indexing (depends on entries allocated)
+   - low 18 bits used for indexing (depends on entries allocated)
  - Atomic read/write operations
  - Depth-based replacement
 
