@@ -342,8 +342,8 @@ void search_loop(uint cur_depth, piece_color turn, struct move root_moves[224], 
 
 aspiration_retry:
 	// aspiration window: use narrow window around previous eval
-	short alpha = (cur_depth > 3) ? eval_turn - aspiration_delta : -INF;
-	short beta  = (cur_depth > 3) ? eval_turn + aspiration_delta :  INF;
+	short alpha = eval_turn - aspiration_delta;
+	short beta  = eval_turn + aspiration_delta;
 
 	short best_eval = -INF;
 
