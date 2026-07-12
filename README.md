@@ -1,4 +1,4 @@
-# Chess Engine
+# BetaOne
 Code in core/
 
 In this repo there are only test programs for the engine, a standard UCI interface is available on 
@@ -56,7 +56,12 @@ Then on the whole board:
 
 PSTs were adapted from Stockfish's legacy HCE evaluation.
 
+### Name
+No association with AlphaZero, this is a very different engine, we just thought the name would be kinda funny. It's not the next version of AlphaZero, no inspiration was actually taken\
+from it.
+
 ## Performance Characteristics
 
 Search throughput: 7.5 million legal moves simulated per second (single thread).
 Branching factor: 1.3x to 2.5x (more nodes per ply searched)
+
