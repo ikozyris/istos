@@ -57,7 +57,7 @@ struct tt_entry {
 		set(0, {64,64}, 0, TT_NONE, 0);
 	}
 };
-const uint TT_BUCKETS = 262144; // 2M * 8 * 8B = 16 MB
+const uint TT_BUCKETS = 262144; // 262K * 8 * 8B = 16 MB
 const uint TT_BUCKET_SIZE = 8;
 extern tt_entry *TT;
 const short TT_MAGIC_FAIL_EVAL = 32767;

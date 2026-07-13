@@ -299,15 +299,16 @@ void engine_init() {
 	init_LMR();
 	init_attacks();
 
-	tt_entry *tmp_tt = (tt_entry*)mmap(NULL, TT_BUCKETS * TT_BUCKET_SIZE * sizeof(tt_entry),
-		PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB | MAP_HUGE_2MB, -1, 0);
-	if (tmp_tt == MAP_FAILED) {
+	uint sz =  TT_BUCKETS * TT_BUCKET_SIZE * sizeof(tt_entry);
+	TT = (tt_entry*)mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | 
+			MAP_HUGETLB | MAP_HUGE_2MB, -1, 0);
+	if (TT == MAP_FAILED) {
 #ifdef LOG
-		printf(RED "Failed to alloc %u KiB with mmap\n" RESET, TT_BUCKETS * TT_BUCKET_SIZE * sizeof(tt_entry) / 1024);
+		printf("Requested size = %u MiB\n", sz / (1024*1024));
+		puts(RED "Failed to alloc with mmap" RESET);
 #endif
-		TT = (tt_entry*)aligned_alloc(64, TT_BUCKETS * TT_BUCKET_SIZE * sizeof(tt_entry));
-	} else
-		TT = tmp_tt;
+		TT = (tt_entry*)aligned_alloc(64, sz);
+	}
 	tt_clear();
 }
 
