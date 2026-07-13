@@ -35,7 +35,7 @@ short score_move(const board *b, struct move m, struct move hash_move, const str
 	// capture
 	if (victim != EMPTY) {
 		// prioritize taking valuable victim using weak attacker (MVV/LVA)
-		short score = 20000 + (PIECE_WEIGHTS_MG[victim] * 10) - PIECE_WEIGHTS_MG[attacker];
+		short score = 20000 + (PIECE_WEIGHTS[victim] * 10) - PIECE_WEIGHTS[attacker];
 
 		// recapture last moved piece
 		// if (m.to == last_target_sq)
@@ -122,7 +122,7 @@ short quiescence(const board &b, short alpha, short beta, piece_color turn) {
 		pick_best_move(moves, scores, i, move_cnt);
 		struct move m = moves[i];
 
-		if (stand_pat + PIECE_WEIGHTS_MG[b.piece(m.to)] + 200 < alpha)
+		if (stand_pat + PIECE_WEIGHTS[b.piece(m.to)] + 200 < alpha)
 			continue;
 
 		board b2 = b;
@@ -172,7 +172,7 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 
 	// Null Move Pruning
 	if constexpr (AllowNull) {
-		if (depth >= 3 && !checked) {
+		if (depth >= 3 && !checked && b.phase > 214) {
 			board null_b = b;
 			null_b.hash_key ^= zobrist_turn;
 			if (null_b.en_passant_sq != NO_EP) {

@@ -109,13 +109,13 @@ struct board {
 			pieces[old_type] &= ~mask;
 			colors[old_col]  &= ~mask;
 
-			phase -= PIECE_WEIGHTS_MG[old_type] / 128;
+			phase -= PIECE_WEIGHTS[old_type] / 128;
 			if (old_col == WHITE) { // lazy evaluation
-				pst_mg_score -= PIECE_WEIGHTS_MG[old_type] + PST_MG[old_type][pos];
-				pst_eg_score -= PIECE_WEIGHTS_EG[old_type] + PST_EG[old_type][pos];
+				pst_mg_score -= PIECE_WEIGHTS[old_type] + PST_MG[old_type][pos];
+				pst_eg_score -= PIECE_WEIGHTS[old_type] + PST_EG[old_type][pos];
 			} else {
-				pst_mg_score += PIECE_WEIGHTS_MG[old_type] + PST_MG[old_type][pos ^ 56];
-				pst_eg_score += PIECE_WEIGHTS_EG[old_type] + PST_EG[old_type][pos ^ 56];
+				pst_mg_score += PIECE_WEIGHTS[old_type] + PST_MG[old_type][pos ^ 56];
+				pst_eg_score += PIECE_WEIGHTS[old_type] + PST_EG[old_type][pos ^ 56];
 			}
 		}
 
@@ -128,13 +128,13 @@ struct board {
 
 			// phase could overflow from promotions but in that case nobody cares since the
 			// material gain outways anything
-			phase += PIECE_WEIGHTS_MG[type] / 128;
+			phase += PIECE_WEIGHTS[type] / 128;
 			if (col == WHITE) {
-				pst_mg_score += PIECE_WEIGHTS_MG[type] + PST_MG[type][pos];
-				pst_eg_score += PIECE_WEIGHTS_EG[type] + PST_EG[type][pos];
+				pst_mg_score += PIECE_WEIGHTS[type] + PST_MG[type][pos];
+				pst_eg_score += PIECE_WEIGHTS[type] + PST_EG[type][pos];
 			} else {
-				pst_mg_score -= PIECE_WEIGHTS_MG[type] + PST_MG[type][pos ^ 56];
-				pst_eg_score -= PIECE_WEIGHTS_EG[type] + PST_EG[type][pos ^ 56];
+				pst_mg_score -= PIECE_WEIGHTS[type] + PST_MG[type][pos ^ 56];
+				pst_eg_score -= PIECE_WEIGHTS[type] + PST_EG[type][pos ^ 56];
 			}
 		}
 		sq_board[pos] = type;

@@ -3,17 +3,7 @@
 // values copied and adjusted from stockfish
 
 // centipawns
-const short PIECE_WEIGHTS_MG[7] = {
-	0,	// EMPTY
-	12000,	// KING
-	85,	// PAWN
-	409,	// KNIGHT
-	432,	// BISHOP
-	666,	// ROOK
-	1326	// QUEEN
-};
-
-const short PIECE_WEIGHTS_EG[7] = {
+const short PIECE_WEIGHTS[7] = {
 	0,	// EMPTY
 	12000,	// KING
 	100,	// PAWN
@@ -44,10 +34,10 @@ const char PST_MG[7][64] = {
 		 0,    0,    0,    0,    0,    0,    0,    0,
 		-7,    6,   -2,  -11,    4,  -14,   10,   -9,
 		 3,  -11,   -6,   22,   -8,   -5,  -14,  -11,
-		11,   -4,  -11,   10,   21,    0,  -12,    5,
-		-3,  -20,    8,   18,   28,   17,   -1,   -6,
-		-9,  -15,   12,   17,   15,   20,    6,  -16,
-		 2,    4,   10,   -2,   -8,   21,   11,    3,
+		11,   -4,  -11,   12,   20,    0,  -12,    5,
+		-3,  -20,    8,   15,   25,   17,   -1,   -6,
+		-9,  -15,   12,   14,   10,   20,    6,  -16,
+		 2,    4,   10,    0,  -10,   21,   11,    3,
 		 0,    0,    0,    0,    0,    0,    0,    0
 	},
 	{ // KNIGHT
