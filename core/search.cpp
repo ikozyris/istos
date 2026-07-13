@@ -207,7 +207,7 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 		pick_best_move(pseudo_moves, scores, i, move_count);
 
 		if (depth <= 2 && scores[i] < 9000) { // futility pruning
-			short margin = (depth == 1) ? 300 : 500;
+			const short margin = (depth == 1) ? 300 : 500;
 			if (stand_eval + margin <= alpha)
 				continue;
 		}

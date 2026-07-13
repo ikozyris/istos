@@ -126,15 +126,15 @@ u64 get_bishop_attacks(uint pos, u64 occ) {
 u64 get_king_attacks(uint pos)
 {
 	u64 attacks = 0;
-	uint col = pos & 7;
-	if (col > 0) { // not on column a
+	uint file = pos & 7;
+	if (file > 0) { // not on file a
 		attacks |= (1ul << (pos - 1)); // left
 		if (pos >= 9)
 			attacks |= (1ul << (pos - 9)); // up-left
 		if (pos < 57)
 			attacks |= (1ul << (pos + 7)); // down-left
 	}
-	if (col < 7) { // not on column h
+	if (file < 7) { // not on file h
 		attacks |= (1ul << (pos + 1)); // right
 		if (pos >= 7)
 			attacks |= (1ul << (pos - 7)); // up-right
@@ -157,19 +157,19 @@ u64 get_knight_attacks(uint pos)
 u64 get_pawn_attacks(uint pos, piece_color color)
 {
 	u64 attacks = 0;
-	uint col = pos & 7;
+	uint file = pos & 7;
 	if (color == WHITE) {
 		if (pos >= 8) {
-			if (col > 0)
+			if (file > 0)
 				attacks |= (1ul << (pos - 9)); // up-left
-			if (col < 7)
+			if (file < 7)
 				attacks |= (1ul << (pos - 7)); // up-right
 		}
 	} else {
 		if (pos < 56) {
-			if (col > 0)
+			if (file > 0)
 				attacks |= (1ul << (pos + 7)); // down-left
-			if (col < 7)
+			if (file < 7)
 				attacks |= (1ul << (pos + 9)); // down-right
 		}
 	}
