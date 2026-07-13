@@ -223,8 +223,8 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 
 		short eval;
 
-		// Late Move Reductions: reduce depth for late quiet moves
-		if (scores[i] < 9000 && legal_moves_searched > 4 && depth >= 3) {
+		// Late Move Reductions: reduce depth for late quiet moves (+ very high history moves)
+		if (scores[i] < 4000 && legal_moves_searched > 4 && depth >= 3) {
 			uint m_idx = std::min(255u, legal_moves_searched);
 			uint d_idx = std::min(63u, depth);
 			int r = LMR_table[d_idx][m_idx];
