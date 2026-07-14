@@ -3,7 +3,7 @@
 // values copied and adjusted from stockfish
 
 // centipawns
-const short PIECE_WEIGHTS[7] = {
+const unsigned short PIECE_WEIGHTS[7] = {
 	0,	// EMPTY
 	12000,	// KING
 	100,	// PAWN
@@ -13,12 +13,12 @@ const short PIECE_WEIGHTS[7] = {
 	1289	// QUEEN
 };
 
-const char KNIGHT_MOBILITY_FACTOR = 6;
-const char BISHOP_MOBILITY_FACTOR = 4;
-const char ROOK_MOBILITY_FACTOR = 4;
+const unsigned char KNIGHT_MOBILITY_FACTOR = 6;
+const unsigned char BISHOP_MOBILITY_FACTOR = 4;
+const unsigned char ROOK_MOBILITY_FACTOR = 4;
 
 // PST tables, top left is a8, from white's perspective
-const char PST_MG[7][64] = {
+const signed char PST_MG[7][64] = {
 	{}, // EMPTY
 	{ // KING
 		-43,  -28,  -50,  -71,  -71,  -50,  -28,  -43,
@@ -82,7 +82,7 @@ const char PST_MG[7][64] = {
 	}
 };
 
-const char PST_EG[7][64] = {
+const signed char PST_EG[7][64] = {
 	{},
 	{ // KING
 		-77,  -42,  -32,  -28,  -28,  -32,  -42,  -77,
@@ -146,8 +146,8 @@ const char PST_EG[7][64] = {
 	}
 };
 
-const char PAWN_ISLANDS_PENALTY = 10;
-const char DOUBLED_PAWN_PENALTY = 20;
+const unsigned char PAWN_ISLANDS_PENALTY = 10;
+const unsigned char DOUBLED_PAWN_PENALTY = 20;
 const unsigned long FILE_MASKS[8] = {
 	0x0101010101010101ul, // a
 	0x0202020202020202ul,
@@ -158,7 +158,7 @@ const unsigned long FILE_MASKS[8] = {
 	0x4040404040404040ul,
 	0x8080808080808080ul
 };
-const char KING_ON_FILE_PENALTY = 40;
+const unsigned char KING_ON_FILE_PENALTY = 40;
 const unsigned long KING_SAFETY_RANK_MASK[8] = {
     0x0000FFFFFFFFFFFFul, // 0-5
     0x00FFFFFFFFFFFFFFul, // 0-6
@@ -180,8 +180,8 @@ const unsigned char KING_PROXIMITY_PENALTY[7][6] = {
 };
 const unsigned char KING_VULNR_PENALTY = 15;
 
-const char KNIGHT_ADJ[9] = {-20, -16, -12, -8, -4, 0, 4, 8, 12};
-const char ROOK_ADJ[9] = {15, 12, 9, 6, 3, 0, -3, -6, -9};
+const signed char KNIGHT_ADJ[9] = {-20, -16, -12, -8, -4, 0, 4, 8, 12};
+const signed char ROOK_ADJ[9] = {15, 12, 9, 6, 3, 0, -3, -6, -9};
 
-const char BISHOP_PAIR_BONUS = 70;
-const char TEMPO_BONUS = 15; // summed inside quiescence search
+const unsigned char BISHOP_PAIR_BONUS = 70;
+const unsigned char TEMPO_BONUS = 15; // summed inside quiescence search
