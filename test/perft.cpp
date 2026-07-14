@@ -10,17 +10,11 @@
 */
 
 
-board b;
+board g_board;
 piece_color turn;
 
-uint64_t generate_legal_moves(struct move* moveList);
-void set_position_from_fen(const char *fen);
-uint64_t perft(int);
-void square_to_algebraic(int idx, char* const squareStr);
-void move_to_uci(struct move m, char* const moveStr, struct board b);
-
 // copied from engine_uci_interface
-void set_position_from_fen(const char *fen) {
+void set_position_from_fen(board *b, const char *fen) {
     char pieces[65], turnChar, castlingState[5], enPassantSquare[3];
     int halfMoves, fullMoves;
 
@@ -35,7 +29,7 @@ void set_position_from_fen(const char *fen) {
             // if the character is a digit, mark this many places as empty
             const int num = c - '0';
             for (int j = 0; j < num; j++) {
-                b.set_piece(EMPTY, WHITE, count++);
+                g_board.set_piece(EMPTY, WHITE, count++);
             }
             continue;
         }
@@ -68,22 +62,22 @@ void set_position_from_fen(const char *fen) {
                 break;
         }
         if (!valid) continue;
-        b.set_piece(type, color, count++);
+        b->set_piece(type, color, count++);
     }
 
     if (turnChar == 'w') turn = WHITE;
     else if (turnChar == 'b') turn = BLACK;
 
-    b.castle_white = 0;
-    b.castle_black = 0;
-    b.en_passant_sq = 64;
+    b->castle_white = 0;
+    b->castle_black = 0;
+    b->en_passant_sq = 64;
     if (strcmp(castlingState, "-")) {
         for (int i = 0; i < strlen(castlingState); i++) {
             const char c = castlingState[i];
-            if (c == 'K') b.castle_white |= (1 << 1);
-            else if (c == 'Q') b.castle_white |= (1 << 0);
-            else if (c == 'k') b.castle_black |= (1 << 1);
-            else if (c == 'q') b.castle_black |= (1 << 0);
+            if (c == 'K') b->castle_white |= (1 << 1);
+            else if (c == 'Q') b->castle_white |= (1 << 0);
+            else if (c == 'k') b->castle_black |= (1 << 1);
+            else if (c == 'q') b->castle_black |= (1 << 0);
         }
     }
 
@@ -94,7 +88,7 @@ void set_position_from_fen(const char *fen) {
         (enPassantSquare[1] >= '0' && enPassantSquare[1] <= '8')    // second character is between 0 and 8
     ) {
         const int idx = enPassantSquare[0] - 'a' + (8 - (enPassantSquare[1] - '0')) * 8;
-        b.en_passant_sq = idx;
+        b->en_passant_sq = idx;
     }
 }
 
@@ -104,7 +98,7 @@ void square_to_algebraic(int idx, char* const squareStr) {
     squareStr[2] = '\0';
 }
 
-void move_to_uci(struct move m, char* const moveStr, struct board b) {
+void move_to_uci(struct move m, char* const moveStr, const struct board &b) {
     square_to_algebraic(m.from, moveStr);
     square_to_algebraic(m.to, &moveStr[2]);
     // check if move is promotion
@@ -119,10 +113,31 @@ void move_to_uci(struct move m, char* const moveStr, struct board b) {
     moveStr[4] = '\0';
 }
 
-uint64_t generate_legal_moves(struct move* moveList) {
-    // TODO: **someone** will have to write this
-    // I wonder who it will be
-    return 0;
+uint64_t generate_legal_moves(const board *b, struct move* moveList)
+{
+    uint move_count = 0;
+    u64 my_pieces = (turn == WHITE) ? b->colors[WHITE] : b->colors[BLACK];
+    while (my_pieces) {
+        uint from = __builtin_ctzll(my_pieces);
+        u64 targets = get_piece_pseudo_moves(b, from, b->colors[WHITE], b->colors[WHITE]);
+
+        while (targets) {
+            uint to = __builtin_ctzll(targets);
+            struct move m = {(u8)from, (u8)to};
+
+            if (!is_valid_move(m, *b, turn)) {
+                targets &= (targets - 1);
+                continue;
+            }
+
+            moveList[move_count] = m;
+            move_count++;
+
+            targets &= (targets - 1); // clear lowest set bit
+        }
+        my_pieces &= (my_pieces - 1);
+    }
+    return move_count;
 }
 
 uint64_t perft(int depth) {
@@ -133,33 +148,33 @@ uint64_t perft(int depth) {
     bool prevDisplay;
     char moveStr[6];
 
-    moveCount = generate_legal_moves(moveList);
+    moveCount = generate_legal_moves(&g_board, moveList);
     if (depth == 1) {
         if (display) {
             // print moves even if depth is 1
             for (int i = 0; i < moveCount; i++) {
-                move_to_uci(moveList[i], moveStr, b);
+                move_to_uci(moveList[i], moveStr, g_board);
                 printf("%s: 1\n", moveStr);
             }
         }
         return moveCount;
     }
     for (int i = 0; i < moveCount; i++) {
-        struct board prevBoard = b;
+        struct board prevBoard = g_board;
 
         prevDisplay = display;
         display = false;
-        make_move(&b, moveList[i]);
+        make_move(&g_board, moveList[i]);
         display = prevDisplay;
         int moveNodes = perft(depth - 1);
         nodes += moveNodes;
 
         if (display) {
-            move_to_uci(moveList[i], moveStr, b);
+            move_to_uci(moveList[i], moveStr, g_board);
             printf("%s: %d\n", moveStr, moveNodes);
         }
 
-        b = prevBoard; // unmake move
+        g_board = prevBoard; // unmake move
     }
 
     return nodes;
@@ -178,7 +193,7 @@ int main(int argc, const char** argv) {
         fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     else
         fen = argv[2];
-    set_position_from_fen(fen);
+    set_position_from_fen(&g_board, fen);
     engine_init();
 
     perft(depth);
