@@ -26,38 +26,44 @@ enum tt_flag : u8 {
 	TT_UPPER
 };
 
+const uint TT_KEY_MASK = 0x7FFFFFFFu;
 struct tt_entry {
 	u64 all;
-	// 28 key (effectively += log2(TT_BUCKETS) = 49-bits)
+	// 31 key (effectively += log2(TT_BUCKETS) = 49-bits)
 	// 12 move (TODO: promotions will be handled by moving to invalid squares)
 	// 6 depth (we don't really care about depth 64+)
 	// 2 bound type
-	// 16 eval (could be less but we are just fine with 28+21 bits key)
+	// 13 eval
 
-	inline u32 get_key() const { return all & 0x0FFFFFFFU; }
+	inline u32 get_key() const { return all & TT_KEY_MASK; }
 	inline move get_move() const {
-		u32 m = (all >> 28) & 0xFFFu;
-        	return move{ (u8)(m & 0x3Fu), (u8)(m >> 6) };
+		u32 m = (all >> 31) & 0xFFFu;
+        	return move {(u8)(m & 0x3Fu), (u8)(m >> 6)};
 	}
-	inline u8 get_depth() const { return (all >> 40) & 0x3Fu; }
-	inline tt_flag get_flag() const { return (tt_flag)((all >> 46) & 0x3u); }
-	inline short get_score() const { return all >> 48; }
+	inline u8 get_depth() const { return (all >> 43) & 0x3Fu; }
+	inline tt_flag get_flag() const { return (tt_flag)((all >> 49) & 0x3u); }
+	inline i16 get_score() const {
+		i16 extracted = all >> 51;
+		if (extracted & 0x1000) // negative
+			return extracted | 0xE000;
+		return extracted;
+	}
 
 	inline void set(u32 key, struct move m, u8 depth, tt_flag flag, short eval) {
-        	u64 packed_move = (m.from & 0x3FU) | ((u64)(m.to & 0x3FU) << 6);
+        	u64 packed_move = (m.from & 0x3Fu) | ((u64)(m.to & 0x3Fu) << 6);
 
-       		all =   (((u64)(u16)eval) << 48) |
-			((u64)((u8)(flag) & 0x3U) << 46) |
-			((u64)(depth & 0x3FU) << 40) |
-			(packed_move << 28) |
-			(key & 0x0FFFFFFFU);
+       		all =   ((u64)(((u16)eval) & 0x3FFFu) << 51) |
+			((u64)(((u8)flag) & 0x3u) << 49) |
+			((u64)(depth & 0x3Fu) << 43) |
+			(packed_move << 31) |
+			(key & TT_KEY_MASK);
 	}
 
 	tt_entry() {
 		set(0, {64,64}, 0, TT_NONE, 0);
 	}
 };
-const uint TT_BUCKETS = 2097152;
+const uint TT_BUCKETS = 262144; // 262K * 8 * 8B = 16 MB
 const uint TT_BUCKET_SIZE = 8;
 extern tt_entry *TT;
 const short TT_MAGIC_FAIL_EVAL = 32767;
@@ -103,13 +109,13 @@ struct board {
 			pieces[old_type] &= ~mask;
 			colors[old_col]  &= ~mask;
 
-			phase -= PIECE_WEIGHTS_MG[old_type] / 128;
+			phase -= PIECE_WEIGHTS[old_type] / 128;
 			if (old_col == WHITE) { // lazy evaluation
-				pst_mg_score -= PIECE_WEIGHTS_MG[old_type] + PST_MG[old_type][pos];
-				pst_eg_score -= PIECE_WEIGHTS_EG[old_type] + PST_EG[old_type][pos];
+				pst_mg_score -= PIECE_WEIGHTS[old_type] + PST_MG[old_type][pos];
+				pst_eg_score -= PIECE_WEIGHTS[old_type] + PST_EG[old_type][pos];
 			} else {
-				pst_mg_score += PIECE_WEIGHTS_MG[old_type] + PST_MG[old_type][pos ^ 56];
-				pst_eg_score += PIECE_WEIGHTS_EG[old_type] + PST_EG[old_type][pos ^ 56];
+				pst_mg_score += PIECE_WEIGHTS[old_type] + PST_MG[old_type][pos ^ 56];
+				pst_eg_score += PIECE_WEIGHTS[old_type] + PST_EG[old_type][pos ^ 56];
 			}
 		}
 
@@ -122,13 +128,13 @@ struct board {
 
 			// phase could overflow from promotions but in that case nobody cares since the
 			// material gain outways anything
-			phase += PIECE_WEIGHTS_MG[type] / 128;
+			phase += PIECE_WEIGHTS[type] / 128;
 			if (col == WHITE) {
-				pst_mg_score += PIECE_WEIGHTS_MG[type] + PST_MG[type][pos];
-				pst_eg_score += PIECE_WEIGHTS_EG[type] + PST_EG[type][pos];
+				pst_mg_score += PIECE_WEIGHTS[type] + PST_MG[type][pos];
+				pst_eg_score += PIECE_WEIGHTS[type] + PST_EG[type][pos];
 			} else {
-				pst_mg_score -= PIECE_WEIGHTS_MG[type] + PST_MG[type][pos ^ 56];
-				pst_eg_score -= PIECE_WEIGHTS_EG[type] + PST_EG[type][pos ^ 56];
+				pst_mg_score -= PIECE_WEIGHTS[type] + PST_MG[type][pos ^ 56];
+				pst_eg_score -= PIECE_WEIGHTS[type] + PST_EG[type][pos ^ 56];
 			}
 		}
 		sq_board[pos] = type;
@@ -146,7 +152,7 @@ extern bool is_valid_move(const struct move m, const struct board &b, piece_colo
 extern u64 get_piece_pseudo_moves(const board *b, uint pos, u64 white, u64 black);
 extern void make_move(struct board *b, const struct move m);
 
-const short INF = 30000;
+const short INF = 4095;
 const short MATE_ABS_THRESHOLD = INF - 31 * 31; 
 short evaluate_board(const board &b);
 

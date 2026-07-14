@@ -35,7 +35,7 @@ short score_move(const board *b, struct move m, struct move hash_move, const str
 	// capture
 	if (victim != EMPTY) {
 		// prioritize taking valuable victim using weak attacker (MVV/LVA)
-		short score = 20000 + (PIECE_WEIGHTS_MG[victim] * 10) - PIECE_WEIGHTS_MG[attacker];
+		short score = 20000 + (PIECE_WEIGHTS[victim] * 10) - PIECE_WEIGHTS[attacker];
 
 		// recapture last moved piece
 		// if (m.to == last_target_sq)
@@ -122,7 +122,7 @@ short quiescence(const board &b, short alpha, short beta, piece_color turn) {
 		pick_best_move(moves, scores, i, move_cnt);
 		struct move m = moves[i];
 
-		if (stand_pat + PIECE_WEIGHTS_MG[b.piece(m.to)] + 200 < alpha)
+		if (stand_pat + PIECE_WEIGHTS[b.piece(m.to)] + 200 < alpha)
 			continue;
 
 		board b2 = b;
@@ -172,7 +172,7 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 
 	// Null Move Pruning
 	if constexpr (AllowNull) {
-		if (depth >= 3 && !checked) {
+		if (depth >= 3 && !checked && b.phase > 214) {
 			board null_b = b;
 			null_b.hash_key ^= zobrist_turn;
 			if (null_b.en_passant_sq != NO_EP) {
@@ -207,7 +207,7 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 		pick_best_move(pseudo_moves, scores, i, move_count);
 
 		if (depth <= 2 && scores[i] < 9000) { // futility pruning
-			short margin = (depth == 1) ? 300 : 500;
+			const short margin = (depth == 1) ? 300 : 500;
 			if (stand_eval + margin <= alpha)
 				continue;
 		}
@@ -223,8 +223,8 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 
 		short eval;
 
-		// Late Move Reductions: reduce depth for late quiet moves
-		if (scores[i] < 9000 && legal_moves_searched > 4 && depth >= 3) {
+		// Late Move Reductions: reduce depth for late quiet moves (+ very high history moves)
+		if (scores[i] < 4000 && legal_moves_searched > 4 && depth >= 3) {
 			uint m_idx = std::min(255u, legal_moves_searched);
 			uint d_idx = std::min(63u, depth);
 			int r = LMR_table[d_idx][m_idx];
@@ -299,15 +299,16 @@ void engine_init() {
 	init_LMR();
 	init_attacks();
 
-	tt_entry *tmp_tt = (tt_entry*)mmap(NULL, TT_BUCKETS * TT_BUCKET_SIZE * sizeof(tt_entry),
-		PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB | MAP_HUGE_2MB, -1, 0);
-	if (tmp_tt == MAP_FAILED) {
+	uint sz =  TT_BUCKETS * TT_BUCKET_SIZE * sizeof(tt_entry);
+	TT = (tt_entry*)mmap(NULL, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | 
+			MAP_HUGETLB | MAP_HUGE_2MB, -1, 0);
+	if (TT == MAP_FAILED) {
 #ifdef LOG
-		printf(RED "Failed to alloc %u KiB with mmap\n" RESET, TT_BUCKETS * TT_BUCKET_SIZE * sizeof(tt_entry) / 1024);
+		printf("Requested size = %u MiB\n", sz / (1024*1024));
+		puts(RED "Failed to alloc with mmap" RESET);
 #endif
-		TT = (tt_entry*)aligned_alloc(64, TT_BUCKETS * TT_BUCKET_SIZE * sizeof(tt_entry));
-	} else
-		TT = tmp_tt;
+		TT = (tt_entry*)aligned_alloc(64, sz);
+	}
 	tt_clear();
 }
 
@@ -342,8 +343,8 @@ void search_loop(uint cur_depth, piece_color turn, struct move root_moves[224], 
 
 aspiration_retry:
 	// aspiration window: use narrow window around previous eval
-	short alpha = (cur_depth > 3) ? eval_turn - aspiration_delta : -INF;
-	short beta  = (cur_depth > 3) ? eval_turn + aspiration_delta :  INF;
+	short alpha = eval_turn - aspiration_delta;
+	short beta  = eval_turn + aspiration_delta;
 
 	short best_eval = -INF;
 

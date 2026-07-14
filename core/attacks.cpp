@@ -2,10 +2,7 @@
 
 // the first blocker is included in occupancy table
 
-#include <immintrin.h> // Required for _pext_u64
-#include <assert.h>
-
-// The exact total number of permutations needed for all 64 squares.
+// total number of permutations needed for all 64 squares
 const uint ROOK_TABLE_SIZE = 102400;
 const uint BISHOP_TABLE_SIZE = 5248;
 
@@ -19,6 +16,8 @@ int bishop_offs[64];
 u64 rook_attacks[ROOK_TABLE_SIZE];
 u64 bishop_attacks[BISHOP_TABLE_SIZE];
 u64 knight_attacks[64];
+u64 king_attacks[64];
+u64 pawn_attacks[2][64];
 
 u64 mask_rook(uint pos) {
 	u64 mask = 0;
@@ -64,7 +63,7 @@ void init_attacks() {
 	int rook_idx = 0;
 	int bishop_idx = 0;
 
-	for (uint pos = 0; pos < 64; pos++) {
+	for (uint pos = 0; pos < 64; pos++) { // rooks and bishops
 		rook_masks[pos] = mask_rook(pos);
 		rook_offs[pos] = rook_idx;
 
@@ -91,7 +90,8 @@ void init_attacks() {
 
 		bishop_idx += 1ul << std::__popcount(bishop_masks[pos]);
 	}
-	for (uint pos = 0; pos < 64; pos++) {
+
+	for (uint pos = 0; pos < 64; pos++) { // knight, king, pawn 
 		u64 attacks = 0;
 		uint r = pos / 8; // rank
 		uint f = pos % 8; // file
@@ -106,10 +106,36 @@ void init_attacks() {
 
 			// verify validity of target
 			if (tr >= 0 && tr < 8 && tc >= 0 && tc < 8)
-			attacks |= (1ul << (tr * 8 + tc));
+				attacks |= (1ul << (tr * 8 + tc));
 		}
 
 		knight_attacks[pos] = attacks;
+
+		u64 k_attacks = 0;
+		if (f > 0) {
+			k_attacks |= (1ul << (pos - 1));
+			if (pos >= 9) k_attacks |= (1ul << (pos - 9));
+			if (pos < 57) k_attacks |= (1ul << (pos + 7));
+		} if (f < 7) {
+			k_attacks |= (1ul << (pos + 1));
+			if (pos >= 7) k_attacks |= (1ul << (pos - 7));
+			if (pos < 55) k_attacks |= (1ul << (pos + 9));
+		}
+		if (pos >= 8) k_attacks |= (1ul << (pos - 8));
+		if (pos < 56) k_attacks |= (1ul << (pos + 8));
+		king_attacks[pos] = k_attacks;
+
+		u64 p_attacks_w = 0;
+		u64 p_attacks_b = 0;
+		if (pos >= 8) {
+			if (f > 0) p_attacks_w |= (1ul << (pos - 9));
+			if (f < 7) p_attacks_w |= (1ul << (pos - 7));
+		} if (pos < 56) {
+			if (f > 0) p_attacks_b |= (1ul << (pos + 7));
+			if (f < 7) p_attacks_b |= (1ul << (pos + 9));
+		}
+		pawn_attacks[WHITE][pos] = p_attacks_w;
+		pawn_attacks[BLACK][pos] = p_attacks_b;
 	}
 }
 
@@ -125,27 +151,7 @@ u64 get_bishop_attacks(uint pos, u64 occ) {
 // Column guards prevent wrapping across board edges.
 u64 get_king_attacks(uint pos)
 {
-	u64 attacks = 0;
-	uint col = pos & 7;
-	if (col > 0) { // not on column a
-		attacks |= (1ul << (pos - 1)); // left
-		if (pos >= 9)
-			attacks |= (1ul << (pos - 9)); // up-left
-		if (pos < 57)
-			attacks |= (1ul << (pos + 7)); // down-left
-	}
-	if (col < 7) { // not on column h
-		attacks |= (1ul << (pos + 1)); // right
-		if (pos >= 7)
-			attacks |= (1ul << (pos - 7)); // up-right
-		if (pos < 55)
-			attacks |= (1ul << (pos + 9)); // down-right
-	}
-	if (pos >= 8)
-		attacks |= (1ul << (pos - 8)); // up
-	if (pos < 56)
-		attacks |= (1ul << (pos + 8)); // down
-	return attacks;
+	return king_attacks[pos];
 }
 
 u64 get_knight_attacks(uint pos)
@@ -156,24 +162,7 @@ u64 get_knight_attacks(uint pos)
 // returns the two diagonal, not forward push squares.
 u64 get_pawn_attacks(uint pos, piece_color color)
 {
-	u64 attacks = 0;
-	uint col = pos & 7;
-	if (color == WHITE) {
-		if (pos >= 8) {
-			if (col > 0)
-				attacks |= (1ul << (pos - 9)); // up-left
-			if (col < 7)
-				attacks |= (1ul << (pos - 7)); // up-right
-		}
-	} else {
-		if (pos < 56) {
-			if (col > 0)
-				attacks |= (1ul << (pos + 7)); // down-left
-			if (col < 7)
-				attacks |= (1ul << (pos + 9)); // down-right
-		}
-	}
-	return attacks;
+	return pawn_attacks[color][pos];
 }
 
 // Dispatch attack generation by piece type.

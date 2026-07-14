@@ -4,7 +4,7 @@
 u64 get_pawn_moves(uint pos, piece_color col, u64 occ, u64 enemy, u8 ep_sq)
 {
 	u64 moves = 0;
-	uint c = pos & 7;
+	uint file = pos & 7;
 
 	if (col == WHITE) {
 		if (pos >= 8) {
@@ -17,12 +17,12 @@ u64 get_pawn_moves(uint pos, piece_color col, u64 occ, u64 enemy, u8 ep_sq)
 						moves |= (1ul << f2);
 				}
 			}
-			if (c > 0) {
+			if (file > 0) {
 				uint cap = pos - 9;
 				if ((enemy & (1ul << cap)) || cap == ep_sq)
 					moves |= (1ul << cap);
 			}
-			if (c < 7) {
+			if (file < 7) {
 				uint cap = pos - 7;
 				if ((enemy & (1ul << cap)) || cap == ep_sq)
 					moves |= (1ul << cap);
@@ -39,12 +39,12 @@ u64 get_pawn_moves(uint pos, piece_color col, u64 occ, u64 enemy, u8 ep_sq)
 						moves |= (1ul << f2);
 				}
 			}
-			if (c > 0) {
+			if (file > 0) {
 				uint cap = pos + 7;
 				if ((enemy & (1ul << cap)) || cap == ep_sq)
 					moves |= (1ul << cap);
 			}
-			if (c < 7) {
+			if (file < 7) {
 				uint cap = pos + 9;
 				if ((enemy & (1ul << cap)) || cap == ep_sq)
 					moves |= (1ul << cap);
@@ -117,15 +117,15 @@ u64 get_piece_pseudo_moves(const board *b, uint pos, u64 white, u64 black)
 
 bool is_valid_move(const struct move m, const struct board &b, piece_color turn)
 {
-	if (m.from >= 64 || m.to >= 64)
+	if (m.from >= 64 || m.to >= 64) [[unlikely]]
 		return false;
 
 	piece_type type = b.piece(m.from);
-	if (type == EMPTY)
+	if (type == EMPTY) [[unlikely]]
 		return false;
 
-	piece_color col = b.color(m.from);
-	if (col != turn)
+	piece_color color = b.color(m.from);
+	if (color != turn) [[unlikely]]
 		return false;
 
 	// TODO: one global table with move undo
@@ -140,24 +140,24 @@ bool is_valid_move(const struct move m, const struct board &b, piece_color turn)
 	u64 to_mask = 1ull << m.to;
 
 	if (type == PAWN && m.to == b.en_passant_sq) {
-		uint ep_capture_sq = (col == WHITE) ? m.to + 8 : m.to - 8;
+		uint ep_capture_sq = (color == WHITE) ? m.to + 8 : m.to - 8;
 		u64 ep_mask = 1ull << ep_capture_sq;
-		piece_color enemy_col = (col == WHITE) ? BLACK : WHITE;
+		piece_color enemy_col = (color == WHITE) ? BLACK : WHITE;
 		next_b.pieces[PAWN] &= ~ep_mask;
 		next_b.colors[enemy_col] &= ~ep_mask;
 	}
 
 	piece_type cap_type = b.piece(m.to);
 	if (cap_type != EMPTY) {
-		piece_color enemy_col = (col == WHITE) ? BLACK : WHITE;
+		piece_color enemy_col = (color == WHITE) ? BLACK : WHITE;
 		next_b.pieces[cap_type] &= ~to_mask;
 		next_b.colors[enemy_col] &= ~to_mask;
 	}
 
 	next_b.pieces[type] &= ~from_mask;
 	next_b.pieces[type] |= to_mask;
-	next_b.colors[col] &= ~from_mask;
-	next_b.colors[col] |= to_mask;
+	next_b.colors[color] &= ~from_mask;
+	next_b.colors[color] |= to_mask;
 
-	return !is_in_check(&next_b, col, next_b.colors[WHITE] | next_b.colors[BLACK]);
+	return !is_in_check(&next_b, color, next_b.colors[WHITE] | next_b.colors[BLACK]);
 }

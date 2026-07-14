@@ -53,7 +53,7 @@ void tt_store(u64 orig_key, move best_move, short score, u8 depth, tt_flag flag)
 	tt_entry *bucket = tt_bucket(orig_key); // query lower bits key
 	tt_entry tmp_entry;
 
-	u32 key = (orig_key >> 36) & 0x0FFFFFFFu; // use higher bits for comparison to use the whole key
+	u32 key = (orig_key >> 33) & TT_KEY_MASK; // use higher bits for comparison to use the whole key
 
 	for (uint i = 0; i < TT_BUCKET_SIZE; ++i) {
 		tmp_entry = atomic_read_8(&bucket[i]);
@@ -108,7 +108,7 @@ short tt_probe(u64 orig_key, uint depth, short alpha, short beta, move &out_move
 	tt_entry *bucket = tt_bucket(orig_key); // query low bits
 	tt_entry tmp_entry;
 
-	u32 key = (orig_key >> 36) & 0x0FFFFFFFu; // compare high bits
+	u32 key = (orig_key >> 33) & TT_KEY_MASK; // compare high bits
 
 	for (uint i = 0; i < TT_BUCKET_SIZE; ++i) {
 		tmp_entry = atomic_read_8(&bucket[i]);

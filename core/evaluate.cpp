@@ -131,7 +131,7 @@ short evaluate_board(const board &b)
 	score -= material_adj(b, black_pawns, BLACK);
 	score += evaluate_pawn_structure(b, black_pawns);
 
-	const uint safety_threshold = (PIECE_WEIGHTS_MG[KING] + PIECE_WEIGHTS_MG[QUEEN] + PIECE_WEIGHTS_MG[KNIGHT]) / 64;
+	const uint safety_threshold = (PIECE_WEIGHTS[KING] + PIECE_WEIGHTS[QUEEN] + PIECE_WEIGHTS[ROOK]) / 64;
 	// king safety
 	if (b.phase > safety_threshold) { // queens still on board
 		score -= king_safety(b, WHITE);
