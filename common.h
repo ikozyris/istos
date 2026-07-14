@@ -10,7 +10,8 @@
 #include <atomic>
 #include <cstdint>
 #include <limits>
-#include <xmmintrin.h>
+#include <xmmintrin.h> // TODO: portable?
+#include <immintrin.h>
 #include <cstring>
 #include <math.h>
 #include <sys/mman.h>

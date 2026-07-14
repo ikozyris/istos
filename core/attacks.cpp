@@ -2,10 +2,7 @@
 
 // the first blocker is included in occupancy table
 
-#include <immintrin.h> // Required for _pext_u64
-#include <assert.h>
-
-// The exact total number of permutations needed for all 64 squares.
+// total number of permutations needed for all 64 squares
 const uint ROOK_TABLE_SIZE = 102400;
 const uint BISHOP_TABLE_SIZE = 5248;
 
