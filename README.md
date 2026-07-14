@@ -6,7 +6,7 @@ a separate [engine-uci-interface](https://git.svlachos.duckdns.org/spiros/engine
 
 The engine is licensed under the GNU GPL v3.
 
-Version 0.8
+Version 0.8.2
 
 ## Architecture
 
@@ -32,7 +32,9 @@ When depth reaches 0, alpha-beta calls quiescence search to search for captures,
 
 ### Attack Generation
 
-Utilizes PEXT instructions and lookup tables for rook, bishop and knight. Used for pseudo-move generation.
+For pseudo-legal move generation: 
+ - PEXT bitboards for rooks and bishops
+ - Simple lookup tables for knights, kings and pawns
 
 ### Data Structures
 
@@ -62,6 +64,6 @@ from it.
 
 ## Performance Characteristics
 
-Search throughput: 7.5 million legal moves simulated per second (single thread).
+Search throughput: 8 million legal moves simulated per second (with good single thread).
 Branching factor: 1.3x to 2.5x (more nodes per ply searched)
 
