@@ -31,7 +31,7 @@ inline u64 get_pawn_attacks(uint pos, piece_color color) {
 }
 void init_attacks();
 
-// Returns true if 'pos' is attacked by the given color
+// by_color is attacker
 inline bool is_square_attacked(const board *b, uint pos, piece_color by_color, u64 occ)
 {
 	u64 enemies = b->colors[by_color];
@@ -60,7 +60,7 @@ inline bool is_square_attacked(const board *b, uint pos, piece_color by_color, u
 	return false;
 }
 
-// Returns true if the king of the given color is attacked by any enemy piece.
+// color_in_check is defender
 inline bool is_in_check(const board *b, piece_color color_in_check, u64 occ)
 {
 	uint king_pos = std::__countr_zero(b->pieces[KING] & b->colors[color_in_check]);
