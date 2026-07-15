@@ -196,5 +196,7 @@ int main(int argc, const char** argv) {
     set_position_from_fen(&g_board, fen);
     engine_init();
 
-    perft(depth);
+    const uint64_t nodes = perft(depth);
+    printf("\nTotal nodes: %lu\n", nodes);
+    return 0;
 }
