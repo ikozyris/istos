@@ -111,10 +111,11 @@ void move_to_uci(struct move m, char* const moveStr, const struct board &b) {
 uint64_t generate_legal_moves(const board *b, struct move* moveList)
 {
     uint move_count = 0;
-    u64 my_pieces = (turn == WHITE) ? b->colors[WHITE] : b->colors[BLACK];
+    u64 white = b->colors[WHITE], black = b->colors[BLACK];
+    u64 my_pieces = (turn == WHITE) ? white : black;
     while (my_pieces) {
         uint from = __builtin_ctzll(my_pieces);
-        u64 targets = get_piece_pseudo_moves(b, from, b->colors[WHITE], b->colors[WHITE]);
+        u64 targets = get_piece_pseudo_moves(b, from, white, black);
 
         while (targets) {
             uint to = __builtin_ctzll(targets);
@@ -160,6 +161,7 @@ uint64_t perft(int depth) {
         prevDisplay = display;
         display = false;
         make_move(&g_board, moveList[i]);
+        turn = (piece_color)(1 - turn);
         int moveNodes = perft(depth - 1);
         nodes += moveNodes;
         display = prevDisplay;
@@ -170,6 +172,7 @@ uint64_t perft(int depth) {
         }
 
         g_board = prevBoard; // unmake move
+        turn = (piece_color)(1 - turn);
     }
 
     return nodes;
