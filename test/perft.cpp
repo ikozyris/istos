@@ -5,11 +5,6 @@
 #include "../core/engine-main.h"
 #include "../common.h"
 
-/*
-    WORK IN PROGRESS: This code has not been run even once.
-*/
-
-
 board g_board;
 piece_color turn;
 
