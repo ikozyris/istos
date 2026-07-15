@@ -165,9 +165,9 @@ uint64_t perft(int depth) {
         prevDisplay = display;
         display = false;
         make_move(&g_board, moveList[i]);
-        display = prevDisplay;
         int moveNodes = perft(depth - 1);
         nodes += moveNodes;
+        display = prevDisplay;
 
         if (display) {
             move_to_uci(moveList[i], moveStr, g_board);
