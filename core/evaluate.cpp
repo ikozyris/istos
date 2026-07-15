@@ -72,31 +72,38 @@ uint king_safety(const board &b, piece_color color)
 	uint king_file = king % 8;
 	uint king_rank = king / 8;
 
-	for (uint i = 0; i < 3; ++i) {
-		uint file = king_file - 1 + i;
-		if (file > 7) // catches both underflow and overflow
-			continue;
-		u64 enemies = b.colors[1 - color] & FILE_MASKS[file];
+	piece_color enemy_color = (piece_color)(1 - color);
+	u64 enemy_pawns = b.colors[enemy_color] & b.pieces[PAWN];
 
-		uint enemy_pawns_cnt = std::__popcount(enemies & b.pieces[PAWN]);
-		if (!enemy_pawns_cnt) // no pawns
-			penalty += KING_ON_FILE_PENALTY; // penalty for semi-open files near king
+	u64 file_mask = FILE_MASKS[king_file];
+	if (!(enemy_pawns & FILE_MASKS[king_file])) // no pawns
+		penalty += KING_ON_FILE_PENALTY; // penalty for semi-open files near king
 
-		u64 enemy_pieces = enemies & ~b.pieces[PAWN]; // and large pieces near king
+	if (king_file > 0) {
+		file_mask |= FILE_MASKS[king_file - 1];
+		if (!(enemy_pawns & FILE_MASKS[king_file - 1]))
+			penalty += KING_ON_FILE_PENALTY;
+	}
 
-		enemy_pieces &= KING_SAFETY_RANK_MASK[king_rank];
+	if (king_file < 7) {
+		file_mask |= FILE_MASKS[king_file + 1];
+		if (!(enemy_pawns & FILE_MASKS[king_file + 1]))
+			penalty += KING_ON_FILE_PENALTY;
+	}
 
-		while (enemy_pieces) { // proximity and material based penalty
-			uint sq = __builtin_ctzll(enemy_pieces);
-			uint enemy_rank = sq / 8;
-		
-			uint rank_dist = std::abs((int)king_rank - (int)enemy_rank);
-			piece_type pt = b.piece(sq);
-		
-			penalty += KING_PROXIMITY_PENALTY[pt][rank_dist];
-		
-			enemy_pieces &= (enemy_pieces - 1);
-		}
+	u64 enemy_pieces = b.colors[enemy_color] & ~b.pieces[PAWN];
+	enemy_pieces &= file_mask & KING_SAFETY_RANK_MASK[king_rank];
+
+	while (enemy_pieces) { // proximity and material based penalty
+		uint sq = __builtin_ctzll(enemy_pieces);
+		uint enemy_rank = sq / 8;
+
+		uint rank_dist = (king_rank > enemy_rank) ? (king_rank - enemy_rank) : (enemy_rank - king_rank);
+		piece_type pt = b.piece(sq);
+
+		penalty += KING_PROXIMITY_PENALTY[pt][rank_dist];
+
+		enemy_pieces &= (enemy_pieces - 1);
 	}
 
 	return penalty;
