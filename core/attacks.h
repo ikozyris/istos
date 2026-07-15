@@ -1,12 +1,34 @@
 #pragma once
 #include "engine-main.h"
 
+struct pext_bbt {
+	u64 mask;     // mask of pieces on board
+	u64 *attacks; // offset into large attack lookup table
+};
+
+extern struct pext_bbt rook_pext[64];
+extern struct pext_bbt bishop_pext[64];
+
+extern u64 knight_attacks[64];
+extern u64 king_attacks[64];
+extern u64 pawn_attacks[2][64];
+
 u64 get_piece_attacks(enum piece_type piece, piece_color col, uint pos, u64 occ);
-u64 get_rook_attacks(uint pos, u64 occ);
-u64 get_bishop_attacks(uint pos, u64 occ);
-u64 get_king_attacks(uint pos);
-u64 get_knight_attacks(uint pos);
-u64 get_pawn_attacks(uint pos, piece_color color);
+inline u64 get_rook_attacks(uint pos, u64 occ) {
+	return rook_pext[pos].attacks[_pext_u64(occ, rook_pext[pos].mask)];
+}
+inline u64 get_bishop_attacks(uint pos, u64 occ) {
+	return bishop_pext[pos].attacks[_pext_u64(occ, bishop_pext[pos].mask)];
+}
+inline u64 get_king_attacks(uint pos) {
+	return king_attacks[pos];
+}
+inline u64 get_knight_attacks(uint pos) {
+	return knight_attacks[pos];
+}
+inline u64 get_pawn_attacks(uint pos, piece_color color) {
+	return pawn_attacks[color][pos];
+}
 void init_attacks();
 
 // Returns true if 'pos' is attacked by the given color

@@ -1,4 +1,5 @@
 #include "engine-main.h"
+#include "attacks.h"
 
 // the first blocker is included in occupancy table
 
@@ -6,11 +7,8 @@
 const uint ROOK_TABLE_SIZE = 102400;
 const uint BISHOP_TABLE_SIZE = 5248;
 
-// PEXT masks and offsets
-u64 rook_masks[64];
-u64 bishop_masks[64];
-int rook_offs[64];
-int bishop_offs[64];
+struct pext_bbt rook_pext[64];
+struct pext_bbt bishop_pext[64];
 
 // attack lookup tables
 u64 rook_attacks[ROOK_TABLE_SIZE];
@@ -60,35 +58,35 @@ u64 generate_bishop_attacks_slow(uint pos, u64 occ) {
 }
 
 void init_attacks() {
-	int rook_idx = 0;
-	int bishop_idx = 0;
+	uint rook_idx = 0;
+	uint bishop_idx = 0;
 
 	for (uint pos = 0; pos < 64; pos++) { // rooks and bishops
-		rook_masks[pos] = mask_rook(pos);
-		rook_offs[pos] = rook_idx;
+		rook_pext[pos].mask = mask_rook(pos);
+		rook_pext[pos].attacks = rook_attacks + rook_idx;
 
 		u64 subset = 0;
 		do {
-			uint pext_idx = _pext_u64(subset, rook_masks[pos]);
-			rook_attacks[rook_offs[pos] + pext_idx] = generate_rook_attacks_slow(pos, subset);
+			uint pext_idx = _pext_u64(subset, rook_pext[pos].mask);
+			rook_pext[pos].attacks[pext_idx] = generate_rook_attacks_slow(pos, subset);
 
-			subset = (subset - rook_masks[pos]) & rook_masks[pos]; // generate all submasks
+			subset = (subset - rook_pext[pos].mask) & rook_pext[pos].mask; // generate all submasks
 		} while (subset);
 
-		rook_idx += 1ul << std::__popcount(rook_masks[pos]);
+		rook_idx += 1ul << std::__popcount(rook_pext[pos].mask);
 
-		bishop_masks[pos] = mask_bishop(pos);
-		bishop_offs[pos] = bishop_idx;
+		bishop_pext[pos].mask = mask_bishop(pos);
+		bishop_pext[pos].attacks = bishop_attacks + bishop_idx;
 
 		subset = 0;
 		do {
-			uint pext_idx = _pext_u64(subset, bishop_masks[pos]);
-			bishop_attacks[bishop_offs[pos] + pext_idx] = generate_bishop_attacks_slow(pos, subset);
+			uint pext_idx = _pext_u64(subset, bishop_pext[pos].mask);
+			bishop_pext[pos].attacks[pext_idx] = generate_bishop_attacks_slow(pos, subset);
 
-			subset = (subset - bishop_masks[pos]) & bishop_masks[pos];
+			subset = (subset - bishop_pext[pos].mask) & bishop_pext[pos].mask;
 		} while (subset);
 
-		bishop_idx += 1ul << std::__popcount(bishop_masks[pos]);
+		bishop_idx += 1ul << std::__popcount(bishop_pext[pos].mask);
 	}
 
 	for (uint pos = 0; pos < 64; pos++) { // knight, king, pawn 
@@ -139,33 +137,7 @@ void init_attacks() {
 	}
 }
 
-u64 get_rook_attacks(uint pos, u64 occ) {
-	return rook_attacks[rook_offs[pos] + _pext_u64(occ, rook_masks[pos])];
-}
-
-u64 get_bishop_attacks(uint pos, u64 occ) {
-	return bishop_attacks[bishop_offs[pos] + _pext_u64(occ, bishop_masks[pos])];
-}
-
-// Returns all squares a king on pos can reach (one step in all eight directions).
-// Column guards prevent wrapping across board edges.
-u64 get_king_attacks(uint pos)
-{
-	return king_attacks[pos];
-}
-
-u64 get_knight_attacks(uint pos)
-{
-	return knight_attacks[pos];
-}
-
-// returns the two diagonal, not forward push squares.
-u64 get_pawn_attacks(uint pos, piece_color color)
-{
-	return pawn_attacks[color][pos];
-}
-
-// Dispatch attack generation by piece type.
+// dispatch attack generation by piece type
 u64 get_piece_attacks(enum piece_type piece, piece_color col, uint pos, u64 occ)
 {
 	switch (piece) {
