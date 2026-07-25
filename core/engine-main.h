@@ -149,7 +149,7 @@ inline void get_occupancy(u64 *white, u64 *black, const board *b)
 }
 
 extern bool is_valid_move(const struct move m, const struct board &b, piece_color turn);
-extern u64 get_piece_pseudo_moves(const board *b, uint pos, u64 white, u64 black);
+extern u64 get_king_castling_moves(const board *b, uint pos, piece_color col, u64 occ);
 extern void make_move(struct board *b, const struct move m);
 
 const short INF = 4095;
@@ -168,6 +168,7 @@ extern void search_loop(uint cur_depth, piece_color turn, struct move root_moves
 
 // for local tests
 extern struct move get_best_move(struct board b, uint target_depth, piece_color turn);
+extern uint generate_legal_moves(const struct board *b, struct move *moves, piece_color turn);
 
 
 inline short pst_score(const struct board *b) {

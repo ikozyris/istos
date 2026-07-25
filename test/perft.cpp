@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <ctype.h>
+#include "../core/attacks.h"
 #include "../core/engine-main.h"
 #include "../common.h"
 
@@ -108,34 +109,6 @@ void move_to_uci(struct move m, char* const moveStr, const struct board &b) {
     moveStr[4] = '\0';
 }
 
-uint64_t generate_legal_moves(const board *b, struct move* moveList)
-{
-    uint move_count = 0;
-    u64 white = b->colors[WHITE], black = b->colors[BLACK];
-    u64 my_pieces = (turn == WHITE) ? white : black;
-    while (my_pieces) {
-        uint from = __builtin_ctzll(my_pieces);
-        u64 targets = get_piece_pseudo_moves(b, from, white, black);
-
-        while (targets) {
-            uint to = __builtin_ctzll(targets);
-            struct move m = {(u8)from, (u8)to};
-
-            if (!is_valid_move(m, *b, turn)) {
-                targets &= (targets - 1);
-                continue;
-            }
-
-            moveList[move_count] = m;
-            move_count++;
-
-            targets &= (targets - 1); // clear lowest set bit
-        }
-        my_pieces &= (my_pieces - 1);
-    }
-    return move_count;
-}
-
 uint64_t perft(int depth) {
     struct move moveList[256];
     int moveCount;
@@ -144,7 +117,7 @@ uint64_t perft(int depth) {
     bool prevDisplay;
     char moveStr[6];
 
-    moveCount = generate_legal_moves(&g_board, moveList);
+    moveCount = generate_legal_moves(&g_board, moveList, turn);
     if (depth == 1) {
         if (display) {
             // print moves even if depth is 1

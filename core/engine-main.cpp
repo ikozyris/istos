@@ -1,59 +1,6 @@
 #include "engine-main.h"
 #include "attacks.h"
 
-u64 get_pawn_moves(uint pos, piece_color col, u64 occ, u64 enemy, u8 ep_sq)
-{
-	u64 moves = 0;
-	uint file = pos & 7;
-
-	if (col == WHITE) {
-		if (pos >= 8) {
-			uint f1 = pos - 8;
-			if (!(occ & (1ul << f1))) {
-				moves |= (1ul << f1);
-				if (pos >= 48 && pos < 56) {
-					uint f2 = pos - 16;
-					if (!(occ & (1ul << f2)))
-						moves |= (1ul << f2);
-				}
-			}
-			if (file > 0) {
-				uint cap = pos - 9;
-				if ((enemy & (1ul << cap)) || cap == ep_sq)
-					moves |= (1ul << cap);
-			}
-			if (file < 7) {
-				uint cap = pos - 7;
-				if ((enemy & (1ul << cap)) || cap == ep_sq)
-					moves |= (1ul << cap);
-			}
-		}
-	} else {
-		if (pos < 56) {
-			uint f1 = pos + 8;
-			if (!(occ & (1ul << f1))) {
-				moves |= (1ul << f1);
-				if (pos >= 8 && pos < 16) {
-					uint f2 = pos + 16;
-					if (!(occ & (1ul << f2)))
-						moves |= (1ul << f2);
-				}
-			}
-			if (file > 0) {
-				uint cap = pos + 7;
-				if ((enemy & (1ul << cap)) || cap == ep_sq)
-					moves |= (1ul << cap);
-			}
-			if (file < 7) {
-				uint cap = pos + 9;
-				if ((enemy & (1ul << cap)) || cap == ep_sq)
-					moves |= (1ul << cap);
-			}
-		}
-	}
-	return moves;
-}
-
 u64 get_king_castling_moves(const board *b, uint pos, piece_color col, u64 occ)
 {
 	u64 moves = 0;
@@ -91,28 +38,6 @@ u64 get_king_castling_moves(const board *b, uint pos, piece_color col, u64 occ)
 		}
 	}
 	return moves;
-}
-
-// generate moves without looking for pins
-u64 get_piece_pseudo_moves(const board *b, uint pos, u64 white, u64 black)
-{
-	piece_type type = b->piece(pos);
-	if (type == EMPTY)
-		return 0;
-
-	piece_color col = b->color(pos);
-	u64 friendly = (col == WHITE) ? white : black;
-	u64 enemy = (col == WHITE) ? black : white;
-
-	if (type == PAWN)
-		return get_pawn_moves(pos, col, black | white, enemy, b->en_passant_sq);
-
-	u64 attacks = get_piece_attacks(type, col, pos, black | white);
-
-	if (type == KING)
-		attacks |= get_king_castling_moves(b, pos, col, black | white);
-
-	return attacks & ~friendly;
 }
 
 bool is_valid_move(const struct move m, const struct board &b, piece_color turn)

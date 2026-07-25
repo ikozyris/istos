@@ -1,5 +1,44 @@
 #pragma once
 #include "engine-main.h"
+#include "evaluate-tables.h"
+
+struct pawn_moves {
+	u64 push1;
+	u64 push2;
+	u64 capL;
+	u64 capR;
+};
+// bulk pawn move generator
+inline struct pawn_moves get_pawns_moves(const struct board *b, piece_color turn, u64 my_pieces, u64 enemy_pieces) {
+	u64 occ = my_pieces | enemy_pieces;
+	u64 pawns = b->pieces[PAWN] & my_pieces;
+
+	u64 w_pawns = turn == WHITE ? pawns : __builtin_bswap64(pawns);
+	u64 w_occ = turn == WHITE ? occ : __builtin_bswap64(occ);
+	u64 w_enemy = turn == WHITE ? enemy_pieces : __builtin_bswap64(enemy_pieces);
+
+	u64 push1 = (w_pawns >> 8) & ~w_occ;
+	u64 push2 = ((push1 & 0x0000FF0000000000ull) >> 8) & ~w_occ;
+	u64 capL = ((w_pawns & ~FILE_MASKS[0]) >> 9) & w_enemy;
+	u64 capR = ((w_pawns & ~FILE_MASKS[7]) >> 7) & w_enemy;
+
+	if (b->en_passant_sq != NO_EP) {
+		u64 ep = 1ull << b->en_passant_sq;
+		u64 w_ep = turn == WHITE ? ep : __builtin_bswap64(ep);
+		capL |= ((w_pawns & ~FILE_MASKS[0]) >> 9) & w_ep;
+		capR |= ((w_pawns & ~FILE_MASKS[7]) >> 7) & w_ep;
+	}
+
+	if (turn == BLACK) {
+		push1 = __builtin_bswap64(push1);
+		push2 = __builtin_bswap64(push2);
+		capL = __builtin_bswap64(capL);
+		capR = __builtin_bswap64(capR);
+	}
+
+	struct pawn_moves res = {push1, push2, capL, capR};
+	return res;
+}
 
 struct pext_bbt {
 	u64 mask;     // mask of pieces on board

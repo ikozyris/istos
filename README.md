@@ -6,7 +6,7 @@ a separate [engine-uci-interface](https://git.svlachos.duckdns.org/spiros/engine
 
 The engine is licensed under the GNU GPL v3.
 
-Version 0.8.2
+Version 0.8.5
 
 ## Architecture
 
@@ -34,7 +34,9 @@ When depth reaches 0, alpha-beta calls quiescence search to search for captures,
 
 For pseudo-legal move generation: 
  - PEXT bitboards for rooks and bishops
- - Simple lookup tables for knights, kings and pawns
+ - Simple lookup tables for attacks of knights, kings and pawns
+
+Fully legal bulk pawn moves generation (bit shift on bitmask of all pawns) 
 
 ### Data Structures
 
@@ -59,11 +61,10 @@ Then on the whole board:
 PSTs were adapted from Stockfish's legacy HCE evaluation.
 
 ### Name
-No association with AlphaZero, this is a very different engine, we just thought the name would be kinda funny. It's not the next version of AlphaZero, no inspiration was actually taken
-from it.
+It's a wordplay on AlphaZero, we just thought the name would be kinda funny since there is almost nothing in common.
 
 ## Performance Characteristics
 
-Search throughput: 8 million legal moves simulated per second (with good single thread).
-Branching factor: 1.3x to 2.5x (more nodes per ply searched)
+Search throughput: 9 million legal moves simulated per second
+Branching factor: 1.4x to 2.2x (more nodes per ply searched)
 

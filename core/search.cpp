@@ -61,37 +61,116 @@ short score_move(const board *b, struct move m, struct move hash_move, const str
 	return pst_delta + history[attacker][m.to]; // default for quiet moves
 }
 
+struct move_gen_ctx { // better than copying all these on each call
+	const board *b;
+	struct move *moves;
+	short *scores;
+	uint *move_count;
+	u64 enemy_pieces;
+	const struct move *killer_moves;
+	const short (*history)[64];
+	struct move hash_move;
+	piece_color turn;
+	bool fully_legal;
+	bool only_captures;
+};
+
+void _add_moves(uint from, u64 targets, struct move_gen_ctx *ctx)
+{
+	if (ctx->only_captures)
+		targets &= ctx->enemy_pieces;
+
+	while (targets) {
+		uint to = __builtin_ctzll(targets);
+		targets &= (targets - 1);
+		struct move m = {(u8)from, (u8)to};
+
+		if (ctx->fully_legal && !is_valid_move(m, *ctx->b, ctx->turn))
+			continue;
+
+		ctx->moves[*ctx->move_count] = m;
+		ctx->scores[*ctx->move_count] = score_move(ctx->b, m, ctx->hash_move, ctx->killer_moves, ctx->turn, ctx->history);
+		(*ctx->move_count)++;
+	}
+}
+
 template <bool FullyLegal, bool OnlyCaptures>
 uint generate_and_score_moves(const board *b, struct move *moves, short *scores, u64 white, u64 black, struct move hash_move, const struct move *killer_moves, const short history[7][64], piece_color turn)
 {
 	uint move_count = 0;
 	u64 my_pieces = (turn == WHITE) ? white : black;
-	while (my_pieces) {
-		uint from = __builtin_ctzll(my_pieces);
-		u64 targets = get_piece_pseudo_moves(b, from, white, black);
+	u64 enemy_pieces = (turn == WHITE) ? black : white;
+	u64 occ = white | black;
 
-		if constexpr (OnlyCaptures) {
-			targets &= (turn == WHITE) ? black : white;
+	struct move_gen_ctx ctx = { b, moves, scores, &move_count, enemy_pieces, killer_moves, 
+		history, hash_move, turn, FullyLegal, OnlyCaptures }; // TODO: benchmark if this is slow
+
+	u64 knights = b->pieces[KNIGHT] & my_pieces;
+	while (knights) {
+		uint from = __builtin_ctzll(knights);
+		_add_moves(from, get_knight_attacks(from) & ~my_pieces, &ctx);
+		knights &= (knights - 1);
+	}
+
+	u64 bishops = b->pieces[BISHOP] & my_pieces;
+	while (bishops) {
+		uint from = __builtin_ctzll(bishops);
+		_add_moves(from, get_bishop_attacks(from, occ) & ~my_pieces, &ctx);
+		bishops &= (bishops - 1);
+	}
+
+	u64 rooks = b->pieces[ROOK] & my_pieces;
+	while (rooks) {
+		uint from = __builtin_ctzll(rooks);
+		_add_moves(from, get_rook_attacks(from, occ) & ~my_pieces, &ctx);
+		rooks &= (rooks - 1);
+	}
+
+	u64 queens = b->pieces[QUEEN] & my_pieces;
+	while (queens) {
+		uint from = __builtin_ctzll(queens);
+		_add_moves(from, (get_rook_attacks(from, occ) | get_bishop_attacks(from, occ)) & ~my_pieces, &ctx);
+		queens &= (queens - 1);
+	}
+
+	u64 kings = b->pieces[KING] & my_pieces;
+	while (kings) {
+		uint from = __builtin_ctzll(kings);
+		u64 attacks = get_king_attacks(from);
+		if constexpr (!OnlyCaptures)
+			attacks |= get_king_castling_moves(b, from, turn, occ);
+		_add_moves(from, attacks & ~my_pieces, &ctx);
+		kings &= (kings - 1);
+	}
+
+	u64 pawns = b->pieces[PAWN] & my_pieces;
+	struct pawn_moves pm = get_pawns_moves(b, turn, my_pieces, enemy_pieces);
+	int d_push1 = turn == WHITE ? 8 : -8;
+	int d_push2 = turn == WHITE ? 16 : -16;
+	int d_capL = turn == WHITE ? 9 : -7;
+	int d_capR = turn == WHITE ? 7 : -9;
+
+	if constexpr (!OnlyCaptures) {
+		while (pm.push1) {
+			uint to = __builtin_ctzll(pm.push1);
+			_add_moves(to + d_push1, 1ull << to, &ctx);
+			pm.push1 &= (pm.push1 - 1);
 		}
-
-		while (targets) {
-			uint to = __builtin_ctzll(targets);
-			struct move m = {(u8)from, (u8)to};
-
-			if constexpr (FullyLegal) {
-				if (!is_valid_move(m, *b, turn)) {
-					targets &= (targets - 1);
-					continue;
-				}
-			}
-
-			moves[move_count] = m;
-			scores[move_count] = score_move(b, m, hash_move, killer_moves, turn, history);
-			move_count++;
-
-			targets &= (targets - 1); // clear lowest set bit
+		while (pm.push2) {
+			uint to = __builtin_ctzll(pm.push2);
+			_add_moves(to + d_push2, 1ull << to, &ctx);
+			pm.push2 &= (pm.push2 - 1);
 		}
-		my_pieces &= (my_pieces - 1);
+	}
+	while (pm.capL) {
+		uint to = __builtin_ctzll(pm.capL);
+		_add_moves(to + d_capL, 1ull << to, &ctx);
+		pm.capL &= (pm.capL - 1);
+	}
+	while (pm.capR) {
+		uint to = __builtin_ctzll(pm.capR);
+		_add_moves(to + d_capR, 1ull << to, &ctx);
+		pm.capR &= (pm.capR - 1);
 	}
 	return move_count;
 }
@@ -99,6 +178,13 @@ uint generate_and_score_moves(const board *b, struct move *moves, short *scores,
 const struct move dummy_killers[2] = {{64,64}, {64,64}};
 struct move dummy_hash_move = {64, 64};
 const short dummy_history[7][64] = {};
+
+uint generate_legal_moves(const board *b, struct move *moves, piece_color turn) {
+	short scores[256];
+	u64 white, black;
+	get_occupancy(&white, &black, b);
+	return generate_and_score_moves<true, false>(b, moves, scores, white, black, dummy_hash_move, dummy_killers, dummy_history, turn);
+}
 
 short quiescence(const board &b, short alpha, short beta, piece_color turn) {
 	short stand_pat = evaluate_board(b); // current evaluation if we don't do any captures
