@@ -52,7 +52,6 @@ extern u64 knight_attacks[64];
 extern u64 king_attacks[64];
 extern u64 pawn_attacks[2][64];
 
-u64 get_piece_attacks(enum piece_type piece, piece_color col, uint pos, u64 occ);
 inline u64 get_rook_attacks(uint pos, u64 occ) {
 	return rook_pext[pos].attacks[_pext_u64(occ, rook_pext[pos].mask)];
 }

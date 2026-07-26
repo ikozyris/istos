@@ -136,24 +136,3 @@ void init_attacks() {
 		pawn_attacks[BLACK][pos] = p_attacks_b;
 	}
 }
-
-// dispatch attack generation by piece type
-u64 get_piece_attacks(enum piece_type piece, piece_color col, uint pos, u64 occ)
-{
-	switch (piece) {
-	case ROOK:
-		return get_rook_attacks(pos, occ);
-	case BISHOP:
-		return get_bishop_attacks(pos, occ);
-	case QUEEN:
-		return get_rook_attacks(pos, occ) | get_bishop_attacks(pos, occ);
-	case KING:
-		return get_king_attacks(pos);
-	case KNIGHT:
-		return get_knight_attacks(pos);
-	case PAWN:
-		return get_pawn_attacks(pos, col);
-	default:
-		return 0;
-	}
-}
