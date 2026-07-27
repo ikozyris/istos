@@ -95,12 +95,12 @@ void _add_moves(uint from, u64 targets, struct move_gen_ctx *ctx)
 }
 
 template <bool FullyLegal, bool OnlyCaptures>
-uint generate_and_score_moves(const board *b, struct move *moves, short *scores, u64 white, u64 black, struct move hash_move, const struct move *killer_moves, const short history[7][64], piece_color turn)
+uint generate_and_score_moves(const board *b, struct move *moves, short *scores, struct move hash_move, const struct move *killer_moves, const short history[7][64], piece_color turn)
 {
 	uint move_count = 0;
-	u64 my_pieces = (turn == WHITE) ? white : black;
-	u64 enemy_pieces = (turn == WHITE) ? black : white;
-	u64 occ = white | black;
+	u64 my_pieces = b->colors[turn];
+	u64 enemy_pieces = b->colors[1 - turn];
+	u64 occ = my_pieces | enemy_pieces;
 
 	struct move_gen_ctx ctx = { b, moves, scores, &move_count, enemy_pieces, killer_moves, 
 		history, hash_move, turn, FullyLegal, OnlyCaptures }; // TODO: benchmark if this is slow
@@ -181,9 +181,7 @@ const short dummy_history[7][64] = {};
 
 uint generate_legal_moves(const board *b, struct move *moves, piece_color turn) {
 	short scores[256];
-	u64 white, black;
-	get_occupancy(&white, &black, b);
-	return generate_and_score_moves<true, false>(b, moves, scores, white, black, dummy_hash_move, dummy_killers, dummy_history, turn);
+	return generate_and_score_moves<true, false>(b, moves, scores, dummy_hash_move, dummy_killers, dummy_history, turn);
 }
 
 short quiescence(const board &b, short alpha, short beta, piece_color turn) {
@@ -198,11 +196,9 @@ short quiescence(const board &b, short alpha, short beta, piece_color turn) {
 	if (stand_pat > alpha)
 		alpha = stand_pat;
 
-	u64 white, black;
-	get_occupancy(&white, &black, &b);
 	struct move moves[40];
 	short scores[40];
-	uint move_cnt = generate_and_score_moves<true, true>(&b, moves, scores, white, black, dummy_hash_move, dummy_killers, dummy_history, turn);
+	uint move_cnt = generate_and_score_moves<true, true>(&b, moves, scores, dummy_hash_move, dummy_killers, dummy_history, turn);
 
 	for (uint i = 0; i < move_cnt; ++i) {	// captures only
 		pick_best_move(moves, scores, i, move_cnt);
@@ -238,10 +234,7 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 	if (res != TT_MAGIC_FAIL_EVAL)
 		return res;
 
-	u64 white, black;
-	get_occupancy(&white, &black, &b);
-
-	u64 occ = white | black;
+	u64 occ = b.colors[WHITE] | b.colors[BLACK];
 	bool checked = is_in_check(&b, turn, occ);
 
 	short stand_eval = evaluate_board(b);
@@ -281,7 +274,7 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 	short scores[224];
 
 	// generate pseudo-legal moves
-	uint move_count = generate_and_score_moves<false, false>(&b, pseudo_moves, scores, white, black,
+	uint move_count = generate_and_score_moves<false, false>(&b, pseudo_moves, scores,
 		hash_move, killer_moves[ply], history[turn], turn);
 
 	uint legal_moves_searched = 0;
@@ -357,9 +350,8 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 	}
 
 	if (legal_moves_searched == 0) {
-		u64 occ = white | black;
 		if (is_in_check(&b, turn, occ)) // prefer shorter checkmates
-			best_eval = -INF + ply * ply;
+			best_eval = -INF + ply;
 		else
 			best_eval = 0; // Stalemate
 	}
@@ -410,11 +402,8 @@ void search_init(struct board& b, piece_color turn, struct move root_moves[224],
 	if (turn == BLACK)
 		b.hash_key ^= zobrist_turn;
 
-	u64 white, black;
-	get_occupancy(&white, &black, &b);
-
 	// generate root fully-legal moves, with empty hash move
-	move_count = generate_and_score_moves<true, false>(&b, root_moves, scores, white, black, best_move, killer_moves[0], history[turn], turn);
+	move_count = generate_and_score_moves<true, false>(&b, root_moves, scores, best_move, killer_moves[0], history[turn], turn);
 
 	best_move = root_moves[0];
 }

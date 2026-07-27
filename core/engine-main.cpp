@@ -56,10 +56,7 @@ bool is_valid_move(const struct move m, const struct board &b, piece_color turn)
 	// TODO: one global table with move undo
 	// simulate move inline without hashing
 	struct board next_b; // copy of table
-	next_b.colors[WHITE] = b.colors[WHITE];
-	next_b.colors[BLACK] = b.colors[BLACK];
-	for (uint i = 0; i < 7; i++)
-		next_b.pieces[i] = b.pieces[i];
+	memcpy(&next_b, &b, sizeof(b.colors) + sizeof(b.pieces));
 
 	u64 from_mask = 1ull << m.from;
 	u64 to_mask = 1ull << m.to;

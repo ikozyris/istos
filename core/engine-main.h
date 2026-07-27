@@ -75,9 +75,9 @@ extern short tt_probe(u64 key, uint depth, short alpha, short beta, move &outMov
 extern uint extract_pv(struct board &board, uint max_ply, struct move *pv);
 
 struct board {
-	u64 hash_key = 0;
 	u64 colors[2]; // colors[WHITE] = bitboard of WHITE pieces
 	u64 pieces[7]; // pieces[PAWN] = bitboard of PAWNs
+	u64 hash_key = 0;
 
 	piece_type sq_board[64];
 
@@ -88,6 +88,7 @@ struct board {
 	// 1st bit (1) queen side, 2nd bit (2) kingside
 	u8 castle_white : 2;
 	u8 castle_black : 2;
+	//piece_color turn;
 
 	inline piece_type piece(uint pos) const {
 		return sq_board[pos];
@@ -125,9 +126,8 @@ struct board {
 			pieces[type] |= mask;
 			colors[col]  |= mask;
 
-
-			// phase could overflow from promotions but in that case nobody cares since the
-			// material gain outways anything
+			// phase could overflow from promotions but in that case nobody cares since
+			// pst_score() detects it, and material values outweight PST scores
 			phase += PIECE_WEIGHTS[type] / 128;
 			if (col == WHITE) {
 				pst_mg_score += PIECE_WEIGHTS[type] + PST_MG[type][pos];
@@ -141,19 +141,12 @@ struct board {
 	}
 };
 
-// Helper to calculate occupancies from the struct
-inline void get_occupancy(u64 *white, u64 *black, const board *b)
-{
-	*white = b->colors[WHITE];
-	*black = b->colors[BLACK];
-}
-
 extern bool is_valid_move(const struct move m, const struct board &b, piece_color turn);
 extern u64 get_king_castling_moves(const board *b, uint pos, piece_color col, u64 occ);
 extern void make_move(struct board *b, const struct move m);
 
 const short INF = 4095;
-const short MATE_ABS_THRESHOLD = INF - 31 * 31; 
+const short MATE_ABS_THRESHOLD = INF - 31; 
 short evaluate_board(const board &b);
 
 // for UCI interface
