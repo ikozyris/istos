@@ -96,7 +96,7 @@ struct board {
 
 	inline piece_color color(uint pos) const {
 		u64 mask = 1ull << pos;
-		return (colors[WHITE] & mask) ? WHITE : BLACK;
+		return (piece_color)(bool)(colors[BLACK] & mask);
 	}
 
 	void set_piece(piece_type type, piece_color col, uint pos) {
@@ -104,7 +104,7 @@ struct board {
 		piece_type old_type = sq_board[pos];
 
 		if (old_type != EMPTY) { // remove existing piece
-			piece_color old_col = (colors[WHITE] & mask) ? WHITE : BLACK;
+			piece_color old_col = (piece_color)(bool)(colors[BLACK] & mask);
 			hash_key ^= zobrist_pieces[old_col][old_type][pos];
 
 			pieces[old_type] &= ~mask;
