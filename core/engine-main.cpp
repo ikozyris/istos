@@ -64,14 +64,14 @@ bool is_valid_move(const struct move m, const struct board &b, piece_color turn)
 	if (type == PAWN && m.to == b.en_passant_sq) {
 		uint ep_capture_sq = (color == WHITE) ? m.to + 8 : m.to - 8;
 		u64 ep_mask = 1ull << ep_capture_sq;
-		piece_color enemy_col = (color == WHITE) ? BLACK : WHITE;
+		piece_color enemy_col = (piece_color)(1 - color);
 		next_b.pieces[PAWN] &= ~ep_mask;
 		next_b.colors[enemy_col] &= ~ep_mask;
 	}
 
 	piece_type cap_type = b.piece(m.to);
 	if (cap_type != EMPTY) {
-		piece_color enemy_col = (color == WHITE) ? BLACK : WHITE;
+		piece_color enemy_col = (piece_color)(1 - color);
 		next_b.pieces[cap_type] &= ~to_mask;
 		next_b.colors[enemy_col] &= ~to_mask;
 	}
