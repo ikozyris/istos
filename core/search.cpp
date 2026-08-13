@@ -495,7 +495,7 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 
 		struct board tmp_b = b;
 		make_move(&tmp_b, best_move);
-		const uint lines = 4;
+		const uint lines = 8;
 		struct move cur_pv[lines];
 		cur_pv[0] = best_move;
 		uint pv_cnt = extract_pv(tmp_b, std::min(cur_depth, lines-1), cur_pv + 1);

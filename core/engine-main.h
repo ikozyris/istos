@@ -163,13 +163,6 @@ extern void search_loop(uint cur_depth, piece_color turn, struct move root_moves
 extern struct move get_best_move(struct board b, uint target_depth, piece_color turn);
 extern uint generate_legal_moves(const struct board *b, struct move *moves, piece_color turn);
 
-
-inline short pst_score(const struct board *b) {
-	int phase = b->phase - 202; // kings alone sum 202
-	if (phase < 0) phase = 0;
-	return (b->pst_mg_score * phase + b->pst_eg_score * (46 - phase)) / 64;
-}
-
 extern u64 nodes;
 
 extern void init_time_management(u64 total, u64 incr);

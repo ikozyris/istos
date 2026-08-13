@@ -145,7 +145,5 @@ short evaluate_board(const board &b)
 	score -= (king_safety(b, WHITE) * phase) / 64;
 	score += (king_safety(b, BLACK) * phase) / 64;
 
-
-
 	return score;
 }
