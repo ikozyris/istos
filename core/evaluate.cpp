@@ -121,7 +121,10 @@ short material_adj(const board &b, u64 my_pawns, piece_color color)
 
 short evaluate_board(const board &b)
 {
-	short score = pst_score(&b);
+	int phase = b.phase - 202; // kings alone sum 202
+	if (phase < 0) phase = 0;
+	short score = (b.pst_mg_score * phase + b.pst_eg_score * (46 - phase)) / 64;
+
 	u64 occ = b.colors[WHITE] | b.colors[BLACK];
 
 	u64 white_king_ring = get_king_attacks(__builtin_ctzll(b.pieces[KING] & b.colors[WHITE]));
@@ -139,8 +142,8 @@ short evaluate_board(const board &b)
 	score += evaluate_pawn_structure(b, black_pawns);
 
 	// multiple of phase to encourage exchanges when under attack
-	score -= (king_safety(b, WHITE) * b.phase) / 256;
-	score += (king_safety(b, BLACK) * b.phase) / 256;
+	score -= (king_safety(b, WHITE) * phase) / 64;
+	score += (king_safety(b, BLACK) * phase) / 64;
 
 
 
