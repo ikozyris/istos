@@ -412,7 +412,9 @@ void search_loop(uint cur_depth, piece_color turn, struct move root_moves[224], 
 		short scores[224], uint move_count, const struct board &b, short &eval, struct move &best_move)
 {
 	short eval_turn = (turn == WHITE) ? eval : -eval;
-	short aspiration_delta = 25;
+	short aspiration_delta = 13;
+	if (cur_depth <= 18)
+		aspiration_delta = 25;
 	if (cur_depth <= 6)
 		aspiration_delta = 100;
 
