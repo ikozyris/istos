@@ -184,4 +184,4 @@ const signed char KNIGHT_ADJ[9] = {-20, -16, -12, -8, -4, 0, 4, 8, 12};
 const signed char ROOK_ADJ[9] = {15, 12, 9, 6, 3, 0, -3, -6, -9};
 
 const unsigned char BISHOP_PAIR_BONUS = 70;
-const unsigned char TEMPO_BONUS = 15; // summed inside quiescence search
+const unsigned char TEMPO_BONUS = 28; // summed inside quiescence search
