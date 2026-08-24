@@ -25,7 +25,8 @@ typedef uint16_t u16;
 typedef int16_t i16;
 typedef uint8_t u8;
 
-using ms = std::chrono::milliseconds;
+using std::max;
+using std::min;
 using Clock = std::chrono::steady_clock;
 
 // pretty output

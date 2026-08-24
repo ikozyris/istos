@@ -6,7 +6,7 @@
 const unsigned short PIECE_WEIGHTS[7] = {
 	0,	// EMPTY
 	12000,	// KING
-	100,	// PAWN
+	120,	// PAWN
 	410,	// KNIGHT
 	439,	// BISHOP
 	663,	// ROOK

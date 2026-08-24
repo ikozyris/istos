@@ -261,7 +261,7 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 			}
 
 			int R = 2 + depth / 6;
-			int r_depth = std::max(0, (int)depth - 1 - R);
+			int r_depth = max(0, (int)depth - 1 - R);
 
 			short null_score = -alpha_beta<false>(null_b, r_depth, -beta, -beta + 1, ply + 1, killer_moves, history, next_turn);
 
@@ -304,10 +304,10 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 
 		// Late Move Reductions: reduce depth for late quiet moves (+ very high history moves)
 		if (scores[i] < 4000 && legal_moves_searched > 4 && depth >= 3) {
-			uint m_idx = std::min(255u, legal_moves_searched);
-			uint d_idx = std::min(63u, depth);
+			uint m_idx = min(255u, legal_moves_searched);
+			uint d_idx = min(63u, depth);
 			int r = LMR_table[d_idx][m_idx];
-			int r_depth = std::max(0, (int)depth - 1 - r);
+			int r_depth = max(0, (int)depth - 1 - r);
 
 			eval = -alpha_beta(next_b, r_depth, -alpha - 1, -alpha, ply + 1, killer_moves, history, next_turn);
 
@@ -326,7 +326,7 @@ short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, 
 			best_eval = eval;
 			best_move = pseudo_moves[i];
 		}
-		alpha = std::max(alpha, eval);
+		alpha = max(alpha, eval);
 
 		if (alpha >= beta) {
 			if (scores[i] < 9000) { // quiet but important moves
@@ -440,7 +440,7 @@ aspiration_retry:
 			best_eval = current_eval;
 			best_move = root_moves[i];
 		}
-		alpha = std::max(alpha, current_eval);
+		alpha = max(alpha, current_eval);
 	}
 
 	// aspiration window failed; redo search
@@ -500,7 +500,7 @@ struct move get_best_move(struct board b, uint target_depth, piece_color turn)
 		const uint lines = 8;
 		struct move cur_pv[lines];
 		cur_pv[0] = best_move;
-		uint pv_cnt = extract_pv(tmp_b, std::min(cur_depth, lines-1), cur_pv + 1);
+		uint pv_cnt = extract_pv(tmp_b, min(cur_depth, lines-1), cur_pv + 1);
 		uint i = 0;
 		if (turn == BLACK) {
 			printf("1. \t\t" GRAY "%u -> %u" RESET "\n", cur_pv[i].from, cur_pv[i].to);

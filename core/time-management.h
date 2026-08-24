@@ -1,198 +1,196 @@
+#pragma once
 #include "../common.h"
 #include "engine-main.h"
 
+#include <algorithm>
+#include <chrono>
+#include <vector>
+
 struct TimeRecord {
-	u64 timeMs = 0;
-	uint depth = 0;
-	move pv;
+	u64 timeMs = 0; // Cumulative time at this depth.
+	u64 nodes = 0;  // Cumulative nodes at this depth.
+	move pv{};
 	short eval = 0;
 };
 
 class TimeManager {
 public:
-	TimeManager(uint maxDepth)
-		: maxDepth(maxDepth),
-		  records(maxDepth + 1),
-		  remainingMs(0),
-		  incrementMs(0),
-		  movesToGo(40),
-		  safetyReserveMs(200),
-		  lastDepth(0),
-		  totalUsedMs(0),
-		  searchStarted(false) {}
+	explicit TimeManager(uint maxDepth = 64) :
+		maxDepth(maxDepth),
+		records(maxDepth + 1) {
+	}
 
-	// call before search begins
-	void setClock(u64 timeLeft, u64 increment, uint mtg = 40) {
+	// timeLeft is the clock before the current move.
+	void setClock(u64 timeLeft, u64 increment, uint mtg = 0) {
 		remainingMs = timeLeft;
 		incrementMs = increment;
-		movesToGo = (mtg == 0 ? 1u : mtg);
+		movesToGo = mtg;
 	}
 
-	// call when search starts
 	void startSearch() {
 		searchStart = Clock::now();
-		searchStarted = true;
+		searching = true;
+		lastDepth = 0;
+		std::fill(records.begin(), records.end(), TimeRecord{});
+		calculateLimits();
 	}
 
-	// call at the end of each completed depth (iterative deepening)
-	void finishSearch(uint depth, move pv, short eval) {
-		if (depth > maxDepth) return;
-
-		u64 used = elapsedSinceStartMs();
-		records[depth].timeMs = used;
-		records[depth].depth = depth;
-		records[depth].pv = pv;
-		records[depth].eval = eval;
-
+	void finishDepth(uint depth, move pv, short eval, u64 nodes = 0) {
+		if (!searching || depth == 0 || depth > maxDepth)
+			return;
+		records[depth] = { elapsedMs(), nodes, pv, eval };
 		lastDepth = depth;
-		totalUsedMs += used;
-
-		if (used >= remainingMs) remainingMs = 0;
-		else remainingMs -= used;
-
-		if (movesToGo > 0) --movesToGo;
 	}
 
-	// Decide whether to continue to nextDepth
 	bool shouldContinue(uint nextDepth) const {
-		if (nextDepth == 0 || nextDepth > maxDepth) return false;
+		if (nextDepth == 0 || nextDepth > maxDepth)
+			return false;
 		if (nextDepth <= 4) return true;
 
-		// If no meaningful time left, stop (after we reached some usable depth)
-		if (nextDepth >= 6 && remainingMs <= safetyReserveMs + 10)
+		const u64 elapsed = elapsedMs();
+		if (elapsed >= hardMs)
 			return false;
 
-		u64 budget = budgetForCurrentMove();
-		u64 projected = projectedNextDepthCost(nextDepth);
-		short eval_dev = evalDeviation();
-		double pv_stability = pvStability();
-		bool stable = (eval_dev <= 20) && (pv_stability > 0.4);
+		if (nextDepth <= 5 && elapsed < hardMs / 4)
+			return true;
 
-		// predicted next iteration would go into reserve
-		if (projected + safetyReserveMs > budget) {
-			if (!stable && remainingMs > projected + (safetyReserveMs / 2)) {
-				// allow going into half of reserve for unstable positions
-			} else {
-				return false;
-			}
-		}
+		const int evalChange = evaluationChange();
+		const float stability = pvStability();
 
-		// stable PV at reasonable depth and time (for endgames where depth increases very fast)
-		if ((lastDepth >= 14 && stable) && elapsedSinceStartMs() > 300)
+		// stable; stop early, unstable; allow more
+		float factor = 0.55f;
+		if (stability >= 0.75f && evalChange <= 12)
+			factor = 0.45f;
+		else if (stability < 0.50f || evalChange >= 30)
+			factor = 0.80f;
+
+		const u64 softThreshold = max(5ul, (u64)(softMs * factor));
+		if (elapsed >= softThreshold)
+			return false;
+
+		const u64 projected = projectedCost(nextDepth);
+		const u64 ceiling = (factor > 0.7f) ? hardMs : softMs;
+		if (elapsed + projected > ceiling)
 			return false;
 
 		return true;
 	}
 
-	u64 getRemainingMs() const { return remainingMs; }
-	uint getLastDepth() const { return lastDepth; }
-	u64 getTotalUsedMs() const { return totalUsedMs; }
+	u64 elapsedMs() const {
+		if (!searching)
+			return 0;
 
-private:
+		return std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - searchStart).count();
+	}
+
+	// Member variables
 	uint maxDepth;
 	std::vector<TimeRecord> records;
-	Clock::time_point searchStart;
-	u64 remainingMs;
-	u64 incrementMs;
-	uint movesToGo;
-	u64 safetyReserveMs;
-	uint lastDepth;
-	u64 totalUsedMs;
-	bool searchStarted;
+	Clock::time_point searchStart{};
 
-	u64 elapsedSinceStartMs() const {
-		if (!searchStarted)
+	u64 remainingMs = 0;
+	u64 incrementMs = 0;
+	u64 safetyReserveMs = 100;
+
+	uint movesToGo = 40;
+	uint lastDepth = 0;
+
+	u64 softMs = 50;
+	u64 hardMs = 100;
+
+	bool searching = false;
+
+private:
+	void calculateLimits() {
+		safetyReserveMs = std::clamp(remainingMs / 25, 30ul, 500ul);
+
+		if (remainingMs <= safetyReserveMs) {
+			softMs = max(1ul, remainingMs / 3);
+			hardMs = remainingMs;
+			return;
+		}
+
+		const u64 spendable = remainingMs - safetyReserveMs;
+
+		// default to 35 moves in sudden death
+		const uint effectiveMtg = movesToGo > 0 ? min(movesToGo, 45u) : 35;
+		const u64 base = spendable / effectiveMtg;
+
+		softMs = base + (incrementMs * 3) / 4; // partial increment
+		softMs = std::clamp(softMs, 10ul, max(20ul, spendable));
+
+		hardMs = std::clamp(softMs * 2, softMs, max(50ul, (spendable * 3) / 2));
+	}
+
+	u64 projectedCost(uint nextDepth) const {
+		if (nextDepth <= lastDepth)
 			return 0;
-		return (u64)std::chrono::duration_cast<ms>(Clock::now() - searchStart).count();
-	}
+		if (lastDepth <= 1)
+			return 5;
 
-	// Budget available for this move; this is not a prediction.
-	u64 budgetForCurrentMove() const {
-		uint mtg = (movesToGo == 0 ? 1u : movesToGo);
+		u64 lastIterationMs = records[lastDepth].timeMs - records[lastDepth - 1].timeMs;
 
-		// Base share of remaining time
-		u64 base = remainingMs / mtg;
-
-		// Add increment conservatively
-		u64 alloc = base + incrementMs;
-
-		// Keep a reserve and avoid spending too much on one move
-		u64 cap = std::max(remainingMs / 4, 10ul);
-		return std::min(alloc, cap);
-	}
-
-	// Predict cost of reaching nextDepth from recent iteration timings.
-	u64 projectedNextDepthCost(uint nextDepth) const {
-		if (lastDepth < 2 || records[lastDepth].timeMs == 0)
-			return std::max(10ul, incrementMs / 2);
-
-		u64 last = records[lastDepth].timeMs;
-		double growth = estimateGrowth();
-
-		uint delta = nextDepth - lastDepth;
-
-		double proj = double(last);
-		for (uint i = 0; i < delta && i < 6; ++i)
+		const float growth = estimateGrowth();
+		float proj = (float)lastIterationMs;
+		for (uint d = lastDepth; d < nextDepth && d < lastDepth + 4; ++d)
 			proj *= growth;
-
-		if (proj < 0.0) proj = 0.0;
-		if (proj > double(std::numeric_limits<u64>::max()))
-			return std::numeric_limits<u64>::max();
 
 		return (u64)proj;
 	}
 
-	// Estimate growth from recent completed depths.
-	double estimateGrowth() const {
-		if (lastDepth < 2) return 2.0;
+	// Effective branching factor from recent node counts
+	float estimateGrowth() const {
+		if (lastDepth <= 3)
+			return 1.8f;
 
-		u64 a = records[lastDepth - 1].timeMs;
-		u64 b = records[lastDepth].timeMs;
+		float ratios[3];
+		uint count = 0;
 
-		if (a == 0 || b == 0) return 2.0;
+		const uint first = lastDepth - 2;
+		for (uint d = first; d <= lastDepth; ++d) {
+			const u64 prev = records[d - 1].nodes;
+			const u64 curr = records[d].nodes;
 
-		double r = double(b) / double(a);
-		r += 0.2; // better safe than sorry
-		if (r < 1.1) r = 1.1;
-		if (r > 6) r = 6;
+			if (prev == 0 || curr == 0)
+				continue;
 
-		return r;
+			ratios[count++] = std::clamp((float)curr / prev, 1.2f, 4.0f);
+		}
+
+		if (count == 0)
+			return 1.8f;
+
+		std::sort(ratios, ratios + count);
+		return ratios[count / 2];
 	}
 
-	double pvStability() const {
-		if (lastDepth < 2)
-			return false;
+	float pvStability() const {
+		if (lastDepth <= 5)
+			return 0.0f;
 
-		// use PV from latest completed depth as reference
 		const move ref = records[lastDepth].pv;
 		if (ref.from == 0 && ref.to == 0)
-			return false;
+			return 0.0f;
 
-		uint matches = 0;
-		uint denom = 0;
+		uint valid = 0;
+		uint matching = 0;
 
-		uint downto = std::max((int)lastDepth - 4, 3); // shallow moves don't matter
-		// ignore first move
-		for (uint d = lastDepth; d >= downto; --d) {
+		for (uint d = lastDepth - 4; d <= lastDepth; ++d) {
 			const move pv = records[d].pv;
 			if (pv.from == 0 && pv.to == 0)
 				continue;
-			++denom;
+
+			++valid;
 			if (pv.from == ref.from && pv.to == ref.to)
-				++matches;
+				++matching;
 		}
 
-		if (denom == 0)
-			return 1;
-
-		return double(matches) / double(denom);
+		return valid > 0 ? (float)matching / valid : 0.0f;
 	}
 
-	short evalDeviation() const {
-		if (lastDepth < 2) return false;
-		short prev = records[lastDepth - 1].eval;
-		short curr = records[lastDepth].eval;
-		short diff = prev > curr ? prev - curr : curr - prev;
-		return diff;
+	int evaluationChange() const {
+		if (lastDepth <= 4)
+			return 0;
+		return std::abs((int)records[lastDepth].eval - (int)records[lastDepth - 1].eval);
 	}
 };
