@@ -1,3 +1,4 @@
+#pragma once
 #include <assert.h>
 #include <bit>
 #include <cstdlib>
