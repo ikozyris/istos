@@ -191,6 +191,6 @@ private:
 	int evaluationChange() const {
 		if (lastDepth <= 4)
 			return 0;
-		return std::abs((int)records[lastDepth].eval - (int)records[lastDepth - 1].eval);
+		return iabs((int)records[lastDepth].eval - (int)records[lastDepth - 1].eval);
 	}
 };

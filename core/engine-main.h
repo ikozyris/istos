@@ -149,14 +149,20 @@ const short INF = 4095;
 const short MATE_ABS_THRESHOLD = INF - 31; 
 short evaluate_board(const board &b);
 
-// for UCI interface
+// for external UCI interface
 extern void engine_init();
 extern void tt_clear();
 
-extern void search_init(struct board& b, piece_color turn, struct move root_moves[224], short scores[224], struct move killer_moves[32][2],
+const uint MAX_DEPTH = 63;
+extern u64 repetition_history[100 + MAX_DEPTH]; // max 100 plies for 50-move rule
+extern uint game_ply;
+extern void repetition_clear();
+extern void repetition_push(u64 hash);
+
+extern void search_init(struct board& b, piece_color turn, struct move root_moves[224], short scores[224], struct move killer_moves[MAX_DEPTH][2],
 			short history[2][7][64], uint &move_count, struct move &best_move_all);
 
-extern void search_loop(uint cur_depth, piece_color turn, struct move root_moves[224], struct move killer_moves[32][2], short history[2][7][64],
+extern void search_loop(uint cur_depth, piece_color turn, struct move root_moves[224], struct move killer_moves[MAX_DEPTH][2], short history[2][7][64],
 			short scores[224], uint move_count, const struct board &b, short &eval, struct move &best_move_cur);
 
 // for local tests

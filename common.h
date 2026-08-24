@@ -28,6 +28,7 @@ typedef uint8_t u8;
 using std::max;
 using std::min;
 using Clock = std::chrono::steady_clock;
+inline int iabs(int a) { return a >= 0 ? a : -a; }
 
 // pretty output
 #define RED   "\x1b[31m"

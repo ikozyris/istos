@@ -2,8 +2,6 @@
 #include "attacks.h"
 #include "evaluate-tables.h"
 
-const uint MAX_DEPTH = 63;
-
 char LMR_table[MAX_DEPTH][256];
 void init_LMR() {
 	for (uint d = 3; d < MAX_DEPTH; ++d)
@@ -220,10 +218,29 @@ short quiescence(const board &b, short alpha, short beta, piece_color turn) {
 	return alpha;
 }
 
+u64 repetition_history[MAX_GAME_PLIES + MAX_DEPTH];
+uint game_ply = 0;
+
+void repetition_clear() {
+	game_ply = 0;
+}
+
+void repetition_push(u64 hash) {
+	if (game_ply < MAX_GAME_PLIES)
+		repetition_history[game_ply++] = hash;
+}
+
 template <bool AllowNull = true>
 short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, struct move killer_moves[MAX_DEPTH][2],
 		short history[2][7][64], piece_color turn)
 {
+	uint curr_ply = game_ply + ply;
+	repetition_history[curr_ply] = b.hash_key;
+
+	for (int p = (int)curr_ply - 2; p >= 0; p -= 2) // search for repetition N-2x plies back
+		if (repetition_history[p] == b.hash_key)
+			return 0;
+
 	short original_alpha = alpha;
 
 	if (depth == 0)
@@ -411,12 +428,14 @@ void search_init(struct board& b, piece_color turn, struct move root_moves[224],
 void search_loop(uint cur_depth, piece_color turn, struct move root_moves[224], struct move killer_moves[MAX_DEPTH][2], short history[2][7][64],
 		short scores[224], uint move_count, const struct board &b, short &eval, struct move &best_move)
 {
+	repetition_history[game_ply] = b.hash_key;
+
 	short eval_turn = (turn == WHITE) ? eval : -eval;
 	short aspiration_delta = 13;
-	if (cur_depth <= 18)
-		aspiration_delta = 25;
 	if (cur_depth <= 6)
 		aspiration_delta = 100;
+	else if (cur_depth <= 18)
+		aspiration_delta = 25;
 
 aspiration_retry:
 	// aspiration window: use narrow window around previous eval

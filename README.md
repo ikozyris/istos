@@ -6,7 +6,7 @@ a separate [engine-uci-interface](https://git.svlachos.duckdns.org/spiros/engine
 
 The engine is licensed under the GNU GPL v3.
 
-Version 0.8.5
+Version 0.8.9
 
 ## Architecture
 
@@ -29,6 +29,8 @@ For quiet move pruning:
 At the start of each call alpha-beta it tries to retrieve the evaluation from the transposition table, saves evaluation at end of function.
 
 When depth reaches 0, alpha-beta calls quiescence search to search for captures, which reduces the Horizon Effect.
+
+Repetitions are handled with move history stack storing full key and checking N-2x plies back for 1 repetition.
 
 ### Attack Generation
 
