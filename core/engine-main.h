@@ -156,8 +156,8 @@ extern void tt_clear();
 const uint MAX_DEPTH = 63;
 extern u64 repetition_history[100 + MAX_DEPTH]; // max 100 plies for 50-move rule
 extern uint game_ply;
-extern void repetition_clear();
-extern void repetition_push(u64 hash);
+inline void repetition_clear() { game_ply = 0; }
+inline void repetition_push(u64 hash) { repetition_history[game_ply++] = hash; }
 
 extern void search_init(struct board& b, piece_color turn, struct move root_moves[224], short scores[224], struct move killer_moves[MAX_DEPTH][2],
 			short history[2][7][64], uint &move_count, struct move &best_move_all);

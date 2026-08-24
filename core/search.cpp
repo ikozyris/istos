@@ -218,17 +218,8 @@ short quiescence(const board &b, short alpha, short beta, piece_color turn) {
 	return alpha;
 }
 
-u64 repetition_history[MAX_GAME_PLIES + MAX_DEPTH];
+u64 repetition_history[100 + MAX_DEPTH];
 uint game_ply = 0;
-
-void repetition_clear() {
-	game_ply = 0;
-}
-
-void repetition_push(u64 hash) {
-	if (game_ply < MAX_GAME_PLIES)
-		repetition_history[game_ply++] = hash;
-}
 
 template <bool AllowNull = true>
 short alpha_beta(const board &b, uint depth, short alpha, short beta, uint ply, struct move killer_moves[MAX_DEPTH][2],
