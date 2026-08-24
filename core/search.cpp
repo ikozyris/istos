@@ -428,10 +428,10 @@ void search_loop(uint cur_depth, piece_color turn, struct move root_moves[224], 
 	else if (cur_depth <= 18)
 		aspiration_delta = 25;
 
-aspiration_retry:
 	// aspiration window: use narrow window around previous eval
-	short alpha = eval_turn - aspiration_delta;
-	short beta  = eval_turn + aspiration_delta;
+	short alpha = max((int)-INF, eval_turn - aspiration_delta);
+	short beta  = min((int)INF,  eval_turn + aspiration_delta);
+aspiration_retry:
 
 	short best_eval = -INF;
 
@@ -455,16 +455,19 @@ aspiration_retry:
 
 	// aspiration window failed; redo search
 	if (best_eval <= eval_turn - aspiration_delta || best_eval >= eval_turn + aspiration_delta) {
+#ifdef LOG
+		printf(RED "aspr_wnd retry: %d vs %d, a: %d b: %d\n" RESET, best_eval, eval_turn, alpha, beta);
+#endif
 		if (best_eval > MATE_ABS_THRESHOLD || best_eval < -MATE_ABS_THRESHOLD) { // skip aspiration entirely for mates
 			alpha = -INF;
 			beta  =  INF;
+			aspiration_delta = INF;
 		} else {
 			aspiration_delta *= 2;
-#ifdef LOG
-			printf(RED "aspr_wnd retry: %d vs %d, a: %d b: %d\n" RESET, best_eval, eval_turn, alpha, beta);
-#endif
-			goto aspiration_retry;
+			alpha = max((int)-INF, eval_turn - aspiration_delta);
+			beta  = min((int)INF,  eval_turn + aspiration_delta);
 		}
+		goto aspiration_retry;
 	}
 
 	eval = (turn == WHITE) ? best_eval : -best_eval;
