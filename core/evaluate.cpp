@@ -115,7 +115,7 @@ short material_adj(const board &b, u64 my_pawns, piece_color color)
 	// knights are valuable with many pawns, rooks with little pawns
 	int knight_cnt = std::__popcount(b.pieces[KNIGHT] & b.colors[color]);
 	int rook_cnt = std::__popcount(b.pieces[ROOK] & b.colors[color]);
-
+ 
 	return knight_cnt * KNIGHT_ADJ[pawn_cnt] + rook_cnt * ROOK_ADJ[pawn_cnt];
 }
 
@@ -123,7 +123,7 @@ short evaluate_board(const board &b)
 {
 	int phase = b.phase - 202; // kings alone sum 202
 	if (phase < 0) phase = 0;
-	short score = (b.pst_mg_score * phase + b.pst_eg_score * (46 - phase)) / 64;
+	short score = (b.pst_mg_score * phase + b.pst_eg_score * (48 - phase)) / 64;
 
 	u64 occ = b.colors[WHITE] | b.colors[BLACK];
 

@@ -13,9 +13,9 @@ const unsigned short PIECE_WEIGHTS[7] = {
 	1289	// QUEEN
 };
 
-const unsigned char KNIGHT_MOBILITY_FACTOR = 6;
-const unsigned char BISHOP_MOBILITY_FACTOR = 4;
-const unsigned char ROOK_MOBILITY_FACTOR = 4;
+const unsigned char KNIGHT_MOBILITY_FACTOR = 7;
+const unsigned char BISHOP_MOBILITY_FACTOR = 5;
+const unsigned char ROOK_MOBILITY_FACTOR = 5;
 
 // PST tables, top left is a8, from white's perspective
 const signed char PST_MG[7][64] = {
