@@ -63,11 +63,9 @@ Then on the whole board:
 
 PSTs were adapted from Stockfish's legacy HCE evaluation.
 
-### Name
-It's a wordplay on AlphaZero, we just thought the name would be kinda funny since there is almost nothing in common.
-
 ## Performance Characteristics
 
 Search throughput: 9 million legal moves simulated per second
 Branching factor: 1.4x to 2.2x (more nodes per ply searched)
+The engine's elo is estimated (calibrated after tournament with 5 different engines * 24 game pairs) be ~2650
 
