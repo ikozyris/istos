@@ -1,8 +1,9 @@
-# BetaOne
+# Istos
+Name is inspired by the fastest fish: sailfish, which is in the istiophorus family.
+
 Code in core/
 
-In this repo there are only test programs for the engine, a standard UCI interface is available on 
-a separate [engine-uci-interface](https://git.svlachos.duckdns.org/spiros/engine-uci-interface) repo.
+In this repo there are only test programs for the engine, a standard UCI interface is not public at the moment.
 
 The engine is licensed under the GNU GPL v3.
 
