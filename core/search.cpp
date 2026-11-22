@@ -458,16 +458,14 @@ aspiration_retry:
 #ifdef LOG
 		printf(RED "aspr_wnd retry: %d vs %d, a: %d b: %d\n" RESET, best_eval, eval_turn, alpha, beta);
 #endif
-		if (best_eval > MATE_ABS_THRESHOLD || best_eval < -MATE_ABS_THRESHOLD) { // skip aspiration entirely for mates
-			alpha = -INF;
-			beta  =  INF;
-			aspiration_delta = INF;
+		if (best_eval > MATE_ABS_THRESHOLD || best_eval < -MATE_ABS_THRESHOLD) {
+			; // no re-search for mates; fall through and return best_eval
 		} else {
 			aspiration_delta *= 2;
 			alpha = max((int)-INF, eval_turn - aspiration_delta);
 			beta  = min((int)INF,  eval_turn + aspiration_delta);
+			goto aspiration_retry;
 		}
-		goto aspiration_retry;
 	}
 
 	eval = (turn == WHITE) ? best_eval : -best_eval;
