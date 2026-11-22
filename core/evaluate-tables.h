@@ -2,7 +2,7 @@
 
 // values copied and adjusted from stockfish
 
-// centipawns
+// centipawns (verify short overflows before tuning)
 const unsigned short PIECE_WEIGHTS[7] = {
 	0,	// EMPTY
 	12000,	// KING
@@ -10,7 +10,7 @@ const unsigned short PIECE_WEIGHTS[7] = {
 	410,	// KNIGHT
 	439,	// BISHOP
 	663,	// ROOK
-	1289	// QUEEN
+	1280	// QUEEN
 };
 
 const unsigned char KNIGHT_MOBILITY_FACTOR = 7;
